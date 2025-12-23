@@ -1,4 +1,5 @@
 # ☕ The Art of code
+This repository contains the code examples associated with the book [The Art of Code](https://www.manning.com/books/the-art-of-code) by S. Banas.
 
 This project contains independent Java examples demonstrating beautiful code and modern language features.  
 Each example class can be **executed individually** using **Java 25** (with preview features enabled) and **Apache Maven**.
