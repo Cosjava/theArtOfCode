@@ -8,10 +8,10 @@ Each example class can be **executed individually** using **Java 25** (with prev
 
 ## ⚙️ Requirements
 
-| Tool | Minimum Version | Notes |
-|------|------------------|--------|
-| **Java** | 25 | Uses `--enable-preview` for modern language features |
-| **Maven** | 3.9.x | For build automation and dependency management |
+| Tool | Minimum Version | Notes                                                 |
+|------|------------------|-------------------------------------------------------|
+| **Java** | 25 | Uses `--enable-preview` for preview language features |
+| **Maven** | 3.9.x | For build automation and dependency management        |
 
 Make sure your `JAVA_HOME` points to a JDK 25 installation.
 
