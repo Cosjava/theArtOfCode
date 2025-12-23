@@ -1,0 +1,8 @@
+{
+  "id": 101,
+  "login": "johndoe",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "active": true,
+  "createdAt": "2022-04-15T10:00:00Z"
+}
