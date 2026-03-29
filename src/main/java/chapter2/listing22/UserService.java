@@ -43,8 +43,8 @@ public class UserService {
     return saveUser(firstName, lastName, email, birthDate, city);
   }
 
-  private void validateMandatoryField(String field, String fieldName) throws UserRegistrationException {
-    if (StringUtils.isBlank(field)) {
+  private void validateMandatoryField(String fieldValue, String fieldName) throws UserRegistrationException {
+    if (StringUtils.isBlank(fieldValue)) {
       throw new UserRegistrationException(fieldName + " is required");
     }
   }

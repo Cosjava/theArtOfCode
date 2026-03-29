@@ -14,21 +14,21 @@ import java.nio.file.Paths;
  * {@link java.nio.file.Files#readString(java.nio.file.Path)}.
  * The implementation contains several error-handling antipatterns that
  * should be identified and corrected.</p>
- *
- * <p>The goal of this exercise is to practice writing resilient, meaningful,
- * and maintainable failure-handling code.</p>
  */
 public class CustomerService {
-  private static final String BASE_PATH = System.getProperty(
+  private static final String BASE_FOLDER = System.getProperty(
     "user.dir") + "\\src\\main\\java\\chapter7" +
     "\\exercise\\data";
+  private static final Path BASE_DIR = Path.of(BASE_FOLDER).normalize();
 
   public String loadCustomerData(String login) {
     Path path = null;
     try {
       String filename = convertToFilename(login);
-      Path baseDir = Paths.get(BASE_PATH).toAbsolutePath().normalize();
-      path = baseDir.resolve(filename).normalize();
+      path = BASE_DIR.resolve(filename).normalize();
+      if (!path.startsWith(BASE_DIR)) {
+        throw new SecurityException("Access denied");
+      }
       return Files.readString(path);
     } catch (Exception e) {
       System.out.println("Exception caught " + login.toLowerCase()

@@ -6,6 +6,7 @@ import chapter1.domain.PricingDetails;
 import chapter1.domain.Product;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -19,14 +20,19 @@ import java.util.Optional;
 public class ProductService {
 
   public Optional<BigDecimal> getFinalPrice(Product product) {
-    return Optional.ofNullable(product).map(Product::pricingDetails)
-      .flatMap(this::priceAmount);
+    return Optional.ofNullable(product)
+      .map(Product::pricingDetails)
+      .map(this::selectPrice)
+      .map(Price::amount);
+
   }
 
-  private Optional<BigDecimal> priceAmount(PricingDetails details) {
-    return Optional.ofNullable(details.discountedPrice())
-      .or(() -> Optional.ofNullable(details.basePrice())).map(Price::amount);
+  private Price selectPrice(PricingDetails details) {
+    return Objects.requireNonNullElse(
+      details.discountedPrice(),
+      details.basePrice());
   }
+
 
   public static void main(String[] args) {
     Price basePrice = new Price(Currency.DOLLARS, new BigDecimal("200.00"));

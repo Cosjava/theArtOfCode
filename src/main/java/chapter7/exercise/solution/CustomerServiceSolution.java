@@ -5,8 +5,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -17,35 +19,35 @@ import java.util.Optional;
  * correctly handle checked exceptions, apply a clean fallback strategy,
  * and log meaningful diagnostic messages.</p>
  *
- * <p>The {@link #loadCustomerData(String)} method reads a JSON file
- * containing customer data from the local file system. If the file cannot
- * be read (for example, it is missing, inaccessible, or corrupted),
- * the method logs an error with a clear, unique message and returns
- * an empty {@link java.util.Optional} instead of {@code null}.
- *
- * <p>This approach eliminates error-handling antipatterns such as
- * catching overly broad exceptions, printing stack traces directly to
- * standard output, or returning null values. It provides a resilient,
- * maintainable, and production-ready implementation.
  */
 public class CustomerServiceSolution {
-  private static final String BASE_PATH = System.getProperty(
+  private static final String BASE_FOLDER = System.getProperty(
     "user.dir") + "\\src\\main\\java\\chapter7" +
     "\\exercise\\data";
+  private static final Path BASE_DIR = Path.of(BASE_FOLDER).normalize();
 
   private static final Logger logger =
     LoggerFactory.getLogger(CustomerServiceSolution.class);
 
-  public Optional<String> loadCustomerData(String login) {
+  public Optional<String> loadCustomerData(String login)
+    throws CustomerDataUnavailableException {
     String filename = convertToFilename(login);
-    Path baseDir = Paths.get(BASE_PATH).toAbsolutePath().normalize();
-    Path path = baseDir.resolve(filename).normalize();
     try {
+      Path path = BASE_DIR.resolve(filename).normalize();
+      if (!path.startsWith(BASE_DIR)) {
+        logger.warn("Path traversal attempt blocked for login {}",
+          hashForLogs(login));
+        throw new CustomerDataUnavailableException(
+          "Unable to read customer data");
+      }
       return Optional.of(Files.readString(path));
-    } catch (IOException e) {
-      logger.error("Failed to load customer data for filename {}",
-        filename, e);
+    } catch (NoSuchFileException e) {
       return Optional.empty();
+    } catch (InvalidPathException | IOException e) {
+      logger.error("Failed to load customer data for login {} with error {}",
+        hashForLogs(login), e.getClass().getSimpleName());
+      throw new CustomerDataUnavailableException(
+        "Unable to read customer data");
     }
   }
 
@@ -53,12 +55,24 @@ public class CustomerServiceSolution {
     return login.toLowerCase() + ".json";
   }
 
-  public static void main(String[] args) {
+  private String hashForLogs(String login) {
+    return Integer.toHexString(
+      Objects.requireNonNullElse(login, "").toLowerCase().hashCode()
+    );
+  }
+
+  public static void main(String[] args)
+    throws CustomerDataUnavailableException {
     CustomerServiceSolution service = new CustomerServiceSolution();
     String login = "JohnDoe";
     Optional<String> data = service.loadCustomerData(login);
 
     data.ifPresentOrElse(d -> logger.info("Customer Data:{}", d),
       () -> logger.info("Failed to load customer data for {}", login));
+
+    String falseLogin = "unknownlogin";
+    data = service.loadCustomerData(falseLogin);
+    data.ifPresentOrElse(d -> logger.info("Customer Data:{}", d),
+      () -> logger.info("Failed to load customer data for {}", falseLogin));
   }
 }

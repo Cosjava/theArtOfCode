@@ -1,105 +1,93 @@
 package chapter4.snippet;
 
-import chapter4.domain.Book;
-import chapter4.listing45.DigitalBook;
-import chapter4.listing45.HardcoverBook;
-import chapter4.listing45.PocketBook;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static chapter4.domain.BookFormat.DIGITAL;
-
 /**
- * Supplementary snippets for Chapter 4.
- * <p>This class gathers small, focused examples used throughout Chapter 4 to
- * illustrate how recent Java language enhancements improve expressiveness.</p>
+ * Supplementary snippets for Chapter 4 – Clarity of intent.
+ *
+ * <p>This class collects short, focused examples that illustrate core
+ * principles
+ * discussed in Chapter 4. The snippets contrast mutable and immutable code
+ * and demonstrate how Java <em>records</em> can simplify data representation
+ * .</p>
  */
 @Slf4j
 public class Snippets {
-
   /**
-   * Updates book information based on its {@link chapter4.domain.BookFormat}.
+   * Demonstrates a common mutability problem when working with collections.
    *
-   * <p>This method demonstrates a modern {@code switch} statement that performs
-   * different actions depending on the format of the provided {@link Book}.
-   * It groups multiple cases—{@code HARDCOVER} and {@code POCKET}—into a single
-   * branch, reducing redundancy and improving readability.</p>
+   * <p>This method counts the number of products for a given country code
+   * by removing elements from a list that do not start with the specified
+   * prefix. However, instead of cloning the list properly, it assigns the
+   * original reference to a new variable named {@code clone}. As a result,
+   * the method mutates the original list passed as an argument.</p>
+   *
+   * @param products    the list of product identifiers
+   * @param countryCode the prefix representing the country code to filter by
+   * @return the number of products starting with the specified country code
    */
-  public void updateBookDataByFormat(Book book) {
-    switch (book.getFormat()) {
-      case DIGITAL -> updateMetadata(book);
-      case HARDCOVER, POCKET -> updateCatalog(book);
-    }
-  }
-
-  private void updateCatalog(Book book) {
-    //mock
-  }
-
-  private void updateMetadata(Book book) {
-    //mock
+  public int countProductsByCountryCodeMutable(
+    List<String> products, String countryCode) {
+    List<String> clone = products;
+    clone.removeIf(s -> !s.startsWith(countryCode));
+    return clone.size();
   }
 
   /**
-   * Demonstrates polymorphism through a common {@link Book} interface.
+   * Counts products by country code without mutating the input list.
    *
-   * <p>This method creates a list of different {@link Book} subtypes—
-   * {@link DigitalBook}, {@link PocketBook}, and {@link HardcoverBook}—
-   * each initialized with its own attributes (such as download link,
-   * color printing, or dust jacket). Despite their differences, all
-   * objects are stored in a single {@code List<Book>}.</p>
+   * <p>This refactored version fixes the earlier version
+   * {@link #countProductsByCountryCodeMutable(List, String)}
+   * that modified the input collection. It now uses a <em>stream pipeline</em>
+   * to filter products declaratively and return the count of matching entries
+   * without altering the original data.</p>
+   *
+   * @param products    the list of product identifiers to analyze (remains
+   *                    unmodified)
+   * @param countryCode the country code prefix used to filter products
+   * @return the number of products whose identifiers start with the given
+   * prefix
    */
-  public void logBookPageCounts() {
-    chapter4.listing45.Book digital = DigitalBook.builder().pageCount(500).title("Clean Code")
-      .downloadLink("https://books.example.com/cleancode").build();
-    chapter4.listing45.Book coloredPocket = PocketBook.builder().title("Effective Java")
-      .pageCount(510).colored(true).build();
-    chapter4.listing45.Book plainPocket = PocketBook.builder().title("Refactoring").pageCount(500)
-      .colored(false).build();
-    chapter4.listing45.Book hardcover = HardcoverBook.builder().title("Design Patterns")
-      .pageCount(500).dustJacket(true).build();
-    List<chapter4.listing45.Book> books = List.of(digital, coloredPocket, plainPocket, hardcover);
-
-    for (chapter4.listing45.Book book : books) {
-      log.info("Page count: " + book.getPageCount() + " — " + book.getTitle());
-    }
+  public long countProductsByCountryCode(
+    List<String> products, String countryCode) {
+    return products.stream()
+      .filter(s -> s.startsWith(countryCode))
+      .count();
   }
 
-  /**
-   * Demonstrates classic {@code instanceof} type checking before refactoring
-   * to pattern matching.
-   *
-   * <p>This method checks whether the provided {@link Book} instance is a
-   * {@link HardcoverBook} before performing a type-specific operation.
-   * If the check succeeds, the object is explicitly cast and its
-   * {@link HardcoverBook#printDustCover()} method is invoked.</p>
-   *
-   * <p>This approach illustrates the traditional use of {@code instanceof}
-   * followed by a manual cast, which was necessary prior to Java’s
-   * introduction of pattern matching for {@code instanceof}. While this
-   * version is correct, it adds visual and cognitive noise by requiring
-   * two statements to perform one conceptual action. In
-   * {@link #printDustCoverModern(chapter4.listing45.Book)}, this logic will be
-   * refactored into a modern version using <em>pattern matching</em>.</p>
-   */
-  public void printDustCoverLegacy(chapter4.listing45.Book bookToPrint) {
-    if (bookToPrint instanceof HardcoverBook) {
-      HardcoverBook hardcoverBook = (HardcoverBook) bookToPrint;
-      hardcoverBook.printDustCover();
-    }
+  public void testCountProductForCountryCode() {
+    List<String> productsMutable = new ArrayList<>();
+    productsMutable.add("FR-123");
+    productsMutable.add("FR-999");
+    productsMutable.add("US-789");
+    int nbOfFrProductsMutable = countProductsByCountryCodeMutable(
+      productsMutable,
+      "FR-");
+    log.info(
+      "Number of french products (with mutable issue): {}",
+      nbOfFrProductsMutable);
+    int nbOfUSProductsMutable = countProductsByCountryCodeMutable(
+      productsMutable,
+      "US-");
+    log.info(
+      "Number of US products (with mutable issue): {}", nbOfUSProductsMutable);
+
+    List<String> products = new ArrayList<>();
+    products.add("FR-123");
+    products.add("FR-999");
+    products.add("US-789");
+    long nbOfFrProducts = countProductsByCountryCode(products, "FR-");
+    log.info("Number of french products: {}", nbOfFrProducts);
+    long nbOfUSProducts = countProductsByCountryCode(products, "US-");
+    log.info("Number of US products: {}", nbOfUSProducts);
   }
 
-  /**
-   * <p>This method refactors the previous
-   * {@link #printDustCoverLegacy(chapter4.listing45.Book)} implementation to use
-   * <em>pattern matching</em> for {@code instanceof}, a modern Java feature
-   * that simplifies type checks and casts into a single, expressive
-   * statement.</p>
-   */
-  public void printDustCoverModern(chapter4.listing45.Book bookToPrint) {
-    if (bookToPrint instanceof HardcoverBook hardcoverBook) {
-      hardcoverBook.printDustCover();
-    }
+  public static void main(String[] args) {
+    Snippets snippets = new Snippets();
+    snippets.testCountProductForCountryCode();
   }
+
 }
