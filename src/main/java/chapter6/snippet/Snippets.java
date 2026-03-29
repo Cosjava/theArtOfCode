@@ -10,16 +10,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Gatherer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Supplementary snippets for Chapter 6 – Streams, lambdas, and functional purity.
+ * Supplementary snippets for Chapter 6 – Streams, lambdas, and functional
+ * purity.
  *
  * <p>This class gathers all illustrative examples used throughout Chapter 6,
  * ranging from basic functions to advanced stream operations.</p>
@@ -159,76 +160,40 @@ public class Snippets {
   }
 
   /**
-   * Demonstrates a basic {@link Function} that converts a {@link String}
-   * into an {@link Integer} representing its length.
+   * Demonstrates function composition with {@link Function#andThen(Function)}.
    *
-   * <p>The input type is {@link String} and the output type is {@link Integer}.
-   * The example calls {@link Function#apply(Object)} to compute the result.</p>
-   */
-  public void applyBasicFunction() {
-    Function<String, Integer> wordCount = String::length;
-    int result = wordCount.apply("How long am I?");
-    log.info("String length: {}", result);
-  }
-
-  /**
-   * Demonstrates function composition using {@link Function#compose(Function)}.
+   * <p>This example first shows a single function, {@code sanitizeField},
+   * that performs two transformations at once: it normalizes repeated spaces
+   * and removes special characters.</p>
    *
-   * <p>This example defines two functions: one that removes spaces from a
-   * string
-   * and another that counts the number of characters. The {@code compose()}
-   * method
-   * combines them so that {@code cleanSpaces} executes first, and its output is
-   * passed to {@code wordCount}.</p>
+   * <p>It then rewrites the same logic as two smaller functions,
+   * {@code normalizeSpaces} and {@code removeSpecialCharacters}, and composes
+   * them into {@code sanitizeFieldComposed}. With {@code andThen()}, the output
+   * of {@code normalizeSpaces} is passed as the input to
+   * {@code removeSpecialCharacters}.</p>
    *
-   * <p>The resulting function, {@code cleanAndCount}, can be reused wherever
-   * this preprocessing and counting behavior is needed.</p>
+   * <p>This illustrates how function composition can replace a larger
+   * multi-purpose function with smaller, reusable transformations.</p>
    */
   public void composeFunctions() {
-    Function<String, Integer> wordCount = String::length;
-    Function<String, String> cleanSpaces = s -> s.replaceAll("\\s+", "");
+    Function<String, String> sanitizeField = field -> field
+      .replaceAll("\\s+", " ")
+      .replaceAll("[<>\"']", "");
 
-    Function<String, Integer> cleanAndCount = wordCount.compose(cleanSpaces);
-    int result = cleanAndCount.apply("How long am I?");
-    log.info("Cleaned string length (no spaces): {}", result);
-  }
+    log.info("Cleaned string : {}",
+      sanitizeField.apply("   clean  that                    string"));
 
-  /**
-   * Demonstrates function composition using {@link Function#andThen(Function)}.
-   *
-   * <p>This example defines one function to count the length of a string
-   * and another to format that numeric result as a readable message.
-   * The {@code andThen()} method ensures that {@code formatResult} executes
-   * after the first function, taking its output as input.</p>
-   *
-   * <p>The final composed function returns a formatted message containing
-   * the computed length.</p>
-   */
-  public void andThenFunctions() {
-    Function<String, Integer> wordCount = String::length;
-    Function<Integer, String> formatResult = result -> "Result: " + result;
-    Function<String, String> countAndFormatResult =
-      wordCount.andThen(formatResult);
-    String result = countAndFormatResult.apply("How long am I?");
-    log.info("Formatted function result: {}", result);
-  }
+    Function<String, String> normalizeSpaces =
+      field -> field.replaceAll("\\s+", " ");
 
-  /**
-   * Demonstrates how to use a {@link ToIntFunction} to compute
-   * the length of a string as a primitive {@code int}.
-   *
-   * <p>This snippet defines a {@code ToIntFunction<String>} that returns
-   * the number of characters in a given string. It then calls
-   * {@link ToIntFunction#applyAsInt(Object)} to obtain the result.</p>
-   *
-   * <p>Using {@code ToIntFunction} avoids boxing overhead compared to
-   * {@code Function<String, Integer>} and is more efficient for primitive
-   * numeric results.</p>
-   */
-  public void computeStringLengthWithToIntFunction() {
-    ToIntFunction<String> wordLength = s -> s.length();
-    int result = wordLength.applyAsInt("How long am I?");
-    log.info("Computed string length: {}", result);
+    Function<String, String> removeSpecialCharacters =
+      field -> field.replaceAll("[<>\"']", "");
+
+    Function<String, String> sanitizeFieldComposed =
+      normalizeSpaces.andThen(removeSpecialCharacters);
+
+    log.info("Cleaned string : {}",
+      sanitizeFieldComposed.apply("   clean  that             string"));
   }
 
   /**
@@ -272,7 +237,7 @@ public class Snippets {
 
     // Convert a sequential stream into a parallel one
     Stream<String> parallelStreamFromSequential =
-      List.of("a", "b", "c").stream().parallel();
+      Stream.of("a", "b", "c").parallel();
 
     // Example: consuming both (results order may vary)
     parallelStreamDirect.forEach(
@@ -310,15 +275,6 @@ public class Snippets {
 
   /**
    * Demonstrates how to process a list of records using the Stream API.
-   *
-   * <p>This method defines a local {@code Book} record and showcases two
-   * independent stream operations:
-   * <ul>
-   *   <li>Filtering books published within the last year and extracting
-   *       their authors.</li>
-   *   <li>Grouping all books by author to count how many titles each one
-   *       has published.</li>
-   * </ul>
    */
   public void processBooks() {
     record Book(String author, LocalDate publishedDate) {}
@@ -330,47 +286,13 @@ public class Snippets {
       new Book("Toni Morrison", LocalDate.now().minusMonths(4))
     );
 
-    // Filter books published within the last year and extract author names
-    List<String> recentAuthors = books.stream()
+    List<String> authorNames = books.stream()
       .filter(book -> book.publishedDate()
         .isAfter(LocalDate.now().minusYears(1)))
       .map(Book::author)
       .toList();
-    log.info("Authors with recent publications: {}", recentAuthors);
 
-    // Group books by author and count how many each has published
-    Map<String, Long> booksPerAuthor = books.stream()
-      .collect(Collectors.groupingBy(Book::author, Collectors.counting()));
-    log.info("Books published per author: {}", booksPerAuthor);
-  }
-
-  /**
-   * Demonstrates the use of a custom {@link Gatherer} to transform stream
-   * elements.
-   *
-   * <p>This example uses the {@code Gatherer.ofSequential()} factory method
-   * to create
-   * a gatherer that duplicates each element: for every input {@code n}, it
-   * emits
-   * both {@code n} and {@code n * 2}. The resulting stream therefore produces
-   * twice as many elements as the original one.</p>
-   *
-   * <p>The {@link Gatherer} API, introduced in Java 21, allows custom stateful
-   * or stateless data transformations in streams while preserving parallel
-   * and sequential processing capabilities.</p>
-   */
-  public void demonstrateGatherer() {
-    Gatherer<Integer, ?, Integer> doubleGatherer = Gatherer.ofSequential(
-      (state, element, downstream) -> {
-        downstream.push(element);
-        downstream.push(element * 2);
-        return true;
-      }
-    );
-
-    Stream.of(1, 2, 3, 4)
-      .gather(doubleGatherer)
-      .forEach(value -> log.info("Gathered value: {}", value));
+    log.info("Authors with recent publications: {}", authorNames);
   }
 
   record ReadResult(Optional<List<String>> result,
@@ -454,6 +376,30 @@ public class Snippets {
   }
 
   /**
+   * Demonstrates imperative exception handling when reading files.
+   *
+   * <p>This example iterates over a list of filenames and reads each file
+   * one by one inside a classic {@code for}-each loop. If a file cannot be
+   * read, the {@link IOException} is caught immediately, and the failure is
+   * logged without interrupting the processing of the remaining files.</p>
+   *
+   * <p>The purpose of this snippet is to contrast imperative error handling
+   * with functional-style pipelines: when exception handling becomes central
+   * to the logic, an explicit loop can be easier to read and maintain.</p>
+   */
+  public void handleExceptionsImperative() {
+    List<String> filenames = new ArrayList<>();
+    filenames.add("filename1");
+    for (String filename : filenames) {
+      try {
+        filenames.addAll(Files.readAllLines(Path.of(filename)));
+      } catch (IOException e) {
+        log.error("Failed to read file: " + filename, e);
+      }
+    }
+  }
+
+  /**
    *
    * <p>This listing intentionally shows an "ugly" pipeline that, while
    * syntactically valid, is difficult to read and maintain. It chains
@@ -487,102 +433,64 @@ public class Snippets {
   }
 
   /**
-   * Demonstrates an illegal attempt to mutate an external variable from
-   * inside a lambda.
+   * Demonstrates how lambdas can read local variables only when they are final
+   * or effectively final.
    *
-   * <p>In this example, the variable {@code count} is declared outside the
-   * lambda
-   * and incremented within the stream pipeline. The compiler rejects this
-   * because variables used in lambdas must be <em>final</em> or
-   * <em>effectively final</em>.
-   * This restriction prevents side effects that would make the function
-   * impure.</p>
+   * <p>This example creates an immutable {@code Book} record, places it in a
+   * list,
+   * and extracts author names through a stream pipeline. Inside the lambda,
+   * the local variable {@code count} cannot be incremented because lambdas
+   * in Java
+   * may capture only final or effectively final local variables.</p>
    */
-  public void mutateExternalVariableInLambda() {
-    record Book(String author, LocalDate publishedDate) {}
-    List<Book> books = Collections.emptyList();
-    int count = 0; // Created outside the lambda
-
-    // Compilation error: "Variable used in lambda expression should be final
-    // or effectively final"
-    List<String> authorNames = books.stream()
+  public void demonstrateEffectivelyFinalVariablesInLambda() {
+    record Book(String title, String author, LocalDate publishedDate) {} ;
+    final Book myBook = new Book("The art of code", "SB", LocalDate.now());
+    var books = new ArrayList<Book>();
+    books.add(myBook);
+    int count = 0;
+    List<String> authorName = books.stream()
       .map(book -> {
         if (book.publishedDate().isAfter(LocalDate.now().minusYears(1))) {
-          // Attempting to modify external state breaks functional purity
-          // and is forbidden by the compiler.
-          // count++; // Uncommenting this line causes compilation failure
+          // count++; //compilation error
         }
         return book.author();
       })
       .toList();
-
-    log.info("Author names: {}", authorNames);
+    log.info("Transformed titles: {} count: {}", authorName, count);
   }
 
   /**
-   * Demonstrates how reassigning a captured variable breaks its effectively
-   * final status.
+   * Demonstrates that a {@code final} reference does not make the referenced
+   * object immutable.
    *
-   * <p>If a variable used inside a lambda is reassigned afterward, it is no
-   * longer
-   * effectively final, and the compiler will forbid its use within the lambda.
-   * This preserves referential transparency by preventing lambdas from
-   * depending
-   * on mutable external state.</p>
+   * <p>This example creates a {@code Book} object referenced by a final
+   * variable
+   * and processes it in a stream pipeline. Even though the reference
+   * {@code myBook} cannot be reassigned, the object itself can still be mutated
+   * through setter calls, both inside the lambda and afterward.</p>
+   *
+   * <p>The example highlights an important limit of purity in Java:
+   * declaring a reference as final prevents reassignment, but it does not
+   * protect
+   * the internal state of a mutable object from side effects.</p>
    */
-  public void reassignEffectivelyFinalVariable() {
-    record Book(String author, LocalDate publishedDate) {}
-    List<Book> books = Collections.emptyList();
-
-    String letter = "A";
-    List<Book> authors = books.stream()
-      .filter(book -> book.author().startsWith(letter))
-      .toList();
-
-    // Once reassigned, `letter` is no longer effectively final.
-    // letter = "B"; // Uncommenting this line will cause compilation failure
-
-    log.info("Authors starting with '{}': {}", letter, authors);
-  }
-
-  /**
-   * Demonstrates how mutating an internal field of a final object breaks
-   * purity.
-   *
-   * <p>Even when a reference is declared {@code final}, its internal state
-   * can still
-   * be modified if the class is mutable. This example shows how a field
-   * mutation inside
-   * a lambda—and even outside it—violates the principle of functional purity
-   * .</p>
-   *
-   * <p>To preserve predictability and testability, prefer immutable types
-   * such as records
-   * for data used within functional pipelines.</p>
-   */
-  public void mutateFinalObjectState() {
-    final Book myBook = new Book("The art of code", "SB", LocalDate.now());
-
+  public void demonstrateMutationThroughReference() {
+    final Book myBook = new Book("How to write an impactful Hello");
     List<String> titles = Stream.of(myBook)
       .map(book -> {
         String title = myBook.getTitle().toUpperCase();
-        myBook.setTitle(title); // Mutating internal state
+        myBook.setTitle(title);
         return title;
       })
       .toList();
-
-    // The object can also be modified outside the pipeline
     myBook.setTitle("Hello");
-
-    log.info("Transformed titles: {}", titles);
-    log.info("Book after external mutation: {}", myBook);
   }
 
   @Data
   @AllArgsConstructor
   public static class Book {
     private String title;
-    private String author;
-    private LocalDate publishedDate;
   }
+
 }
