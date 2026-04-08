@@ -41,7 +41,9 @@ public class BmiService {
 
     List<Object> stats = new ArrayList<>();
     countByAgeAndBmi.forEach((age, counts) -> counts.forEach((category, count) -> {
-      double percentage = 100.0 * count / totalUsers;
+      double percentage = totalUsers == 0
+        ? 0.0
+        : 100.0 * count / totalUsers;
       stats.add(new Object[]{age, category, percentage});
     }));
 

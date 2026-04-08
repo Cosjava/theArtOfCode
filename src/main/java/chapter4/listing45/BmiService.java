@@ -68,9 +68,12 @@ public class BmiService {
 
     List<BmiStat> stats = countByAgeBmiKey.entrySet().stream()
       .map(entry -> new BmiStat(
-        entry.getKey().age(), entry.getKey()
-        .category(), new Percentage(100.0 * entry.getValue() / totalUsers)
-      )).toList();
+        entry.getKey().age(),
+        entry.getKey().category(),
+        new Percentage(totalUsers == 0 ? 0.0 :
+          100.0 * entry.getValue() / totalUsers)
+      ))
+      .toList();
 
     Age ageWithMostObese = countByAgeBmiKey.entrySet().stream()
       .filter(entry -> entry.getKey().category() == BmiCategory.OBESE)
