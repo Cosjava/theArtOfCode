@@ -1,4 +1,4 @@
-package chapter6.listing62;
+package chapter6.listing61;
 
 import chapter6.domain.User;
 import lombok.extern.slf4j.Slf4j;

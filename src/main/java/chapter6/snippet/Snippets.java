@@ -1,7 +1,7 @@
 package chapter6.snippet;
 
 import chapter6.domain.User;
-import chapter6.listing62.UserEmailService;
+import chapter6.listing61.UserEmailService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -416,7 +416,7 @@ public class Snippets {
    */
   public void processUserEmails() {
     List<User> users = UserEmailService.getUsersWithEmail();
-    List<String> recentSortedUppercaseEmails = users.stream()
+    List<String> recentSortedLowercaseEmails = users.stream()
       .filter(user -> user.isActive())
       .filter(user -> user.getSignupDate()
         .isAfter(LocalDate.now().minusYears(1)))
@@ -429,7 +429,7 @@ public class Snippets {
       .limit(100)
       .toList();
     log.info("Processed {} email addresses: {}",
-      recentSortedUppercaseEmails.size(), recentSortedUppercaseEmails);
+      recentSortedLowercaseEmails.size(), recentSortedLowercaseEmails);
   }
 
   /**
