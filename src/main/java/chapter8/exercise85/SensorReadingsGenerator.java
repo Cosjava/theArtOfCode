@@ -74,7 +74,7 @@ public class SensorReadingsGenerator {
     };
 
     // Create readings for each device (2D array)
-    Reading[][] readings = new Reading[3][];
+    Reading[][] readings = new Reading[deviceIds.length][];
 
     // Device A readings
     readings[0] = new Reading[]{
