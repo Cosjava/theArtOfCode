@@ -8,31 +8,14 @@ argument-hint: 'Describe the code you want to generate or refactor (e.g., "gener
 
 Generate or refactor code following the **Clarity of Intent** principles from *The Art of Code*, Chapter 4.
 
-The data model should reveal the purpose of the code. A reader should understand what a value means, what unit it uses, whether it can change, and which rules make it valid — without opening the class, inspecting the constructor, or searching the codebase.
+The data model should reveal the purpose of the code. A reader should understand what a value means, what unit it uses, whether it can change, and which rules make it valid — without opening its definition, inspecting its construction logic, or searching the codebase.
 
-Use this skill when generating or refactoring data classes, records, DTOs, request/response models, domain values, validation logic, or code with ambiguous primitives or excessive boilerplate.
+Use this skill when generating or refactoring data structures, data carriers, request/response models, domain values, validation logic, or code with ambiguous primitive values, unclear construction, unnecessary mutability, or excessive boilerplate.
 
 ---
 
-## Table of contents
 
-1. [Model the data first](#step-1--model-the-data-first)
-2. [Spot ambiguity](#step-2--spot-ambiguity)
-3. [Make domain concepts explicit](#step-3--make-domain-concepts-explicit)
-4. [Use small explicit data carriers](#step-4--use-small-explicit-data-carriers)
-5. [Flatten structures when they hide meaning](#step-5--flatten-structures-when-they-hide-meaning)
-6. [Prefer immutable data when possible](#step-6--prefer-immutable-data-when-possible)
-7. [Put invariants close to the data](#step-7--put-invariants-close-to-the-data)
-8. [Use explicit categories for closed sets](#step-8--use-explicit-categories-for-closed-sets)
-9. [Choose construction that explains itself](#step-9--choose-construction-that-explains-itself)
-10. [Place behavior where it clarifies the data](#step-10--place-behavior-where-it-clarifies-the-data)
-11. [Naming](#step-11--naming)
-12. [Extraction gate: avoid over-modeling](#step-12--extraction-gate-avoid-over-modeling)
-13. [Let the clearer data model simplify behavior](#step-13--let-the-clearer-data-model-simplify-behavior)
-14. [Refactoring order: smallest blast radius first](#step-14--refactoring-order-smallest-blast-radius-first)
-15. [Default behaviour and output format](#step-15--default-behaviour-and-output-format)
-
-> **Public boundaries warning** — when the code is part of a public API contract (OpenAPI-generated DTOs, REST request/response models, published events, persisted JPA entities), renaming a field or wrapping a primitive **breaks consumers or stored data**. In that case, apply the principles to the *internal* domain layer that wraps the contract, and leave the contract itself unchanged. See Steps 3, 6, 7, and 14 for specific guidance.
+> **Public boundaries warning** — when the code is part of a public API contract (OpenAPI-generated DTOs, REST request/response models, published events, persisted JPA entities), renaming a field or wrapping a primitive **breaks consumers or stored data**. In that case, apply the principles to the *internal* domain layer that wraps the contract, and leave the contract itself unchanged.
 
 ---
 
@@ -44,11 +27,11 @@ Ask:
 
 - What is the central data concept?
 - Which values represent identity, state, unit, range, or category?
-- Which values come from outside the system?
+- Which values come from outside the system, and which are internal?
 - Which values are temporary, derived, or persisted?
 - Which values drive behavior?
-
-Do not start by creating wrappers. First understand the shape and role of the data.
+- Which values naturally belong together?
+- Which values are part of a public contract or generated model that cannot be changed directly?
 
 ---
 
@@ -66,9 +49,21 @@ Flag the data model when you see any of these signals:
 - nullable fields with no documented meaning
 - boilerplate (getters, setters, equals, hashCode) that buries the actual structure
 
-A signal only justifies action if the new type or change earns its place. **Always cross-check Step 2 with [Step 12 — Extraction gate](#step-12--extraction-gate-avoid-over-modeling) before introducing any new type.** Detection (Step 2) and gating (Step 12) are two halves of the same decision.
+A signal only justifies action if the change earns its place. Skip the change when:
 
-If a signal forces the reader to guess *and* Step 12 allows extraction, the model needs work.
+- the existing name is already clear
+- the value has no rule, unit, ambiguity, or risk of confusion
+- the type would be used only once and adds no protection
+- the abstraction is more obscure than the primitive it replaces
+- it only moves complexity elsewhere
+
+Use names that reveal the role of the data:
+
+- **Types / carriers / categories**: precise domain nouns, such as `EmailAddress`, `Money`, `CustomerId`, `PaymentStatus`.
+- **Fields / properties / parameters**: names that reveal meaning and unit, such as `weightInPounds`, `amountIncludingTax`, `expiresAt`.
+- **Booleans**: yes/no questions, such as `isActive`, `hasExpired`, `canReceivePromotion`.
+
+Avoid vague names such as `Data`, `Info`, `Payload`, `Wrapper`, `Helper`, `value`, `type`, `date`, or `flag`, unless they are established project conventions.
 
 ---
 
@@ -85,7 +80,7 @@ Replace a primitive with a domain type **only when the type can carry a rule, a 
 | `String country` | `CountryCode` | a closed set / format applies |
 | `String id` | `CustomerId`, `OrderId` | swapping different IDs is plausible |
 | `String type` | enum or sealed type | values come from a closed set |
-| `boolean active` | `AccountStatus` | more than two states exist or are coming |
+| `boolean active` | `AccountStatus` | more than two states exist |
 
 ```java
 // before
@@ -101,7 +96,7 @@ PhysicalProfile profile = new PhysicalProfile(
 
 If none of the triggers above apply, keep the primitive.
 
-> **Public-contract caveat** — never wrap a primitive directly inside an OpenAPI-generated DTO, a published event payload, or a persisted JPA column: it would change the wire format or the database schema. Instead, wrap the primitive in the **internal domain object** built from the DTO (see Step 7).
+> **Public-boundary reminder** — if this value belongs to a public contract or persisted model, apply the wrapper in the internal domain layer instead.
 
 ---
 
@@ -130,7 +125,7 @@ over unrelated parameters, generic maps, arrays, or tuples.
 
 A small data carrier earns its place when it gives a meaningful name to values that already belong together.
 
-> **Step 4 vs Step 5** — Step 4 *introduces* a carrier when several loose values belong together (no existing structure, or a flat parameter list). Step 5 *replaces* an existing nested structure (`Map<A, Map<B, C>>`, deep DTO chains) when its shape hides intent. If you are creating a new aggregate, you are in Step 4. If you are reshaping one that already exists, you are in Step 5.
+> **Step 4 vs Step 5** — Use Step 4 when loose values already belong together and need a named carrier. Use Step 5 when an existing nested structure hides intent and should be reshaped.
 
 ---
 
@@ -138,26 +133,32 @@ A small data carrier earns its place when it gives a meaningful name to values t
 
 Deeply nested structures can obscure intent. When a nested structure forces the reader to mentally reconstruct the data shape, prefer a flatter explicit model.
 
-Watch for:
+Watch for and **must flatten**:
 
-- nested maps
-- maps with string keys representing domain concepts
-- deeply nested DTOs used only to reach one value
+- nested structures: structures that contain other structures inside them, such as maps of maps, dictionaries of dictionaries, maps of lists, lists of maps, nested objects, or nested arrays
+  - `Map<K1, Map<K2, V>>` → `Map<CompositeKey(K1, K2), V>` with an explicit composite key record
+  - `Map<K, List<V>>` → if V values group conceptually, consider `Map<CompositeKey, V>` or a collection carrier
+  - Lists of maps: `List<Map<K, V>>` → consider a record grouping the map's entries
+- maps, dictionaries, or key/value structures where string keys represent domain concepts
+- deeply nested DTOs, records, or objects used only to reach one value
 - repeated access chains such as `a.b().c().d()`
+- tuples, arrays, or lists where position carries meaning (replace with named records)
 
-Prefer composite keys or explicit records when they make the structure clearer.
+**When flattening, always create an explicit composite key or carrier record** to name the grouped dimensions. Never leave a flat map with raw primitive keys if the original was nested.
+
+Prefer composite keys, named carriers, or explicit intermediate types when they make the structure clearer.
 
 ```java
-// harder to reason about
+// harder to reason about — nested structure, must flatten
 Map<CustomerId, Map<ProductId, Discount>> discounts;
 
-// clearer
+// clearer — one flat map with explicit composite key
 Map<CustomerProductKey, Discount> discounts;
 
 record CustomerProductKey(CustomerId customerId, ProductId productId) {}
 ```
 
-Flatten only when it improves understanding. Do not flatten a structure that naturally represents a meaningful hierarchy.
+**Exception:** Flatten only when it improves understanding. Do not flatten a structure that naturally represents a meaningful hierarchy and is used as a hierarchy (e.g., a tree where you regularly access intermediate levels). But when you are iterating all leaf values or aggregating across all keys, flattening is usually the right choice.
 
 ---
 
@@ -165,7 +166,7 @@ Flatten only when it improves understanding. Do not flatten a structure that nat
 
 Use immutable structures (records, value objects, `final` fields) when the data is never modified after creation. When exposing collections, return defensive copies or unmodifiable views. Replace setters with transformation methods that return new values.
 
-**Framework-mandated mutability is allowed**: JPA entities, Jackson DTOs without `@JsonCreator`, OpenAPI-generated models, MapStruct sources. Keep them mutable, but do not extend that mutability to the domain layer that wraps them.
+**Boundary or framework-mandated mutability is allowed**: some frameworks, serializers, ORMs, schema-generated models, or mapping tools require mutable structures. Keep that mutability at the boundary, and prefer immutable models inside the domain layer.
 
 ---
 
@@ -185,31 +186,27 @@ record Age(int value) {
 
 Make invalid combinations impossible when the language allows it: enums, sealed hierarchies, dedicated result types.
 
-**When the type is generated** — OpenAPI client models, JPA entities, protobuf — you cannot add invariants to it. Instead, enforce them in:
-
-- a wrapping value object built from the generated DTO, or
-- the service / factory that constructs the DTO.
-
-Keep low-level technical validation (`@NotNull`, `@Size`) separate from domain invariants.
+If the type is generated or framework-owned, enforce invariants in the internal wrapper, factory, or mapping layer instead.
 
 ---
 
 ## Step 8 — Use explicit categories for closed sets
 
-When a value can only belong to a fixed set of known states or categories, represent that constraint explicitly.
+When a value can only belong to a fixed set of known states or categories, represent that constraint explicitly instead of relying on free-form values.
 
-Prefer:
+Prefer the equivalent construct in the target language, such as:
 
 - enums
-- sealed types
-- discriminated unions
-- tagged union types
-- pattern-matchable variants
+- union types
+- sealed or closed hierarchies
+- tagged/discriminated variants
+- constant sets with validation when the language has no stronger option
 
 Avoid:
 
 - raw strings
 - numeric codes
+- loosely validated constants
 - booleans that are starting to represent several states
 
 ```java
@@ -229,11 +226,11 @@ Use explicit categories when the set of values is closed and meaningful to the d
 
 The way an object is built should reveal intent at the call site.
 
-- **constructor** — few clear parameters
-- **named parameters** — when the language supports them
-- **builder** — many optional parameters, such as Lombok `@Builder` in Java
-- **factory method** — when construction has a meaningful domain name, such as `Subscription.trialFor(user)` or `Invoice.paid(order, payment)`
-- **value object** — when same-typed parameters can be swapped
+- **simple constructor or initializer** — when there are only a few clear parameters
+- **named parameters / keyword arguments** — when the language supports passing arguments by name
+- **builder** — when there are many optional parameters or many values of the same basic type
+- **factory method** — when the construction has a meaningful domain name, such as `trialSubscriptionFor(user)` or `paidInvoiceFor(order, payment)`
+- **explicit value types** — when same-typed values can be swapped or need units, rules, or identity
 
 ```java
 // avoid — positional arguments, ambiguous nulls, swappable same-typed values
@@ -251,71 +248,7 @@ PersonProfile profile = PersonProfile.builder()
 
 ---
 
-## Step 10 — Place behavior where it clarifies the data
-
-Apply this heuristic:
-
-- the method **only reads its own fields** → put it on the type
-- the method needs another **collaborator** — repository, client, service, mapper → put it in a service
-- the method **formats or derives a value** intrinsic to the concept → put it on the type
-
-```java
-// good — only reads own fields
-record Employee(String name, int age, Money salary) {
-  boolean isJunior() {
-    return age <= 25;
-  }
-}
-
-// bad — needs a collaborator, belongs in a service
-record Employee(...) {
-  void generatePayrollReportAndSendEmail() {
-    // uses repository + mailer
-  }
-}
-```
-
-When behavior depends on a closed set of data categories, prefer an explicit branching structure such as a switch expression, pattern matching, or equivalent language construct.
-
-Use explicit branching when:
-
-- the set of cases is closed
-- each branch is short
-- the behavior is directly driven by the data category
-- the compiler or type system can help check exhaustiveness
-
-Use polymorphism or Strategy when:
-
-- new behavior must be added without changing existing branching code
-- each behavior is complex
-- behavior is injected or configured dynamically
-
----
-
-## Step 11 — Naming
-
-- **Types**: precise domain nouns — `EmailAddress`, `Money`, `CustomerId`, `PaymentStatus`. Avoid vague names like `Data`, `Info`, `Payload`, `Wrapper`, `Helper`. Project-defined technical suffixes that convey a layer (`Dto`, `Vm`, `Resource`, `Mapper`) remain allowed when they match the codebase convention.
-- **Fields**: meaning and unit — `weightInPounds`, `amountIncludingTax`, `expiresAt`. Avoid `value`, `type`, `date`, `flag`.
-- **Booleans**: yes/no questions — `isActive`, `hasExpired`, `canReceivePromotion`. Replace with an enum once more than two states appear.
-
----
-
-## Step 12 — Extraction gate: avoid over-modeling
-
-A new type must earn its place. **Skip the wrapper when any of these holds**:
-
-- the existing name is already clear
-- the value has no rule, unit, ambiguity, or risk of confusion
-- the type would be used only once and adds no protection
-- the abstraction is more obscure than the primitive it replaces
-- it only moves complexity elsewhere
-- the surrounding code is generated and the wrapper would not be reachable from the call site that matters
-
-> A model is good when it reduces confusion. It is excessive when it adds ceremony without reducing risk.
-
----
-
-## Step 13 — Let the clearer data model simplify behavior
+## Step 10 — Let the clearer data model simplify behavior
 
 After improving the data model, re-check the surrounding logic.
 
@@ -331,26 +264,32 @@ A clearer model should reduce the amount of interpretation needed in the behavio
 
 ---
 
-## Step 14 — Refactoring order: smallest blast radius first
+## Step 11 — Refactoring order: smallest blast radius first
 
-Work outward from the cheapest, safest change:
+When refactoring existing code, apply changes from the smallest blast radius to the largest:
 
-1. **Rename** — variables, fields, parameters. Cheap inside a module; **not free across public boundaries** (OpenAPI fields, JSON contracts, persisted columns, published event keys). On a public boundary, keep the external name and rename only the internal mapping target.
-2. **Wrap** — introduce domain types where Step 3 triggers apply and Step 12 allows.
-3. **Group** — introduce small data carriers where values already belong together.
-4. **Flatten** — replace nested structures when they hide meaning.
-5. **Freeze** — make data immutable where mutation is unnecessary.
-6. **Guard** — move invariants onto the type, or its factory if the type is generated.
-7. **Categorize** — replace raw strings, numeric codes, or overloaded booleans with explicit categories.
-8. **Reshape construction** — replace long argument lists with builders or factory methods.
-9. **Simplify behavior** — let the clearer model remove interpretation logic.
-10. **Re-check Step 12** — drop any type added earlier that does not earn its place.
+1. Rename unclear data.
+2. Group values that already belong together.
+3. Wrap ambiguous primitives only when the new type earns its place.
+4. Flatten nested structures only when they hide meaning.
+5. Make data immutable when mutation is unnecessary.
+6. Move invariants close to the data.
+7. Replace raw categories with explicit ones.
+8. Reshape unclear construction.
+9. Simplify behavior around the clearer data model.
+10. Remove any abstraction that added ceremony without reducing confusion.
 
-Each step must leave the code compiling and tests green. Do not refactor everything at once.
+Each step must preserve behavior and keep the code compiling.
+
+**Audit checklist before finalizing:**
+- [ ] All nested structures are flattened into composite keys?
+- [ ] All positional tuples or arrays replaced with named records?
+- [ ] All nested DTOs/objects that hide intent reshaped?
+- [ ] If there are exceptions, are they explicitly justified in comments?
 
 ---
 
-## Step 15 — Default behaviour and output format
+## Default behaviour and output format
 
 **Without an explicit instruction, refactor the code** — do not just identify issues. Analysis-only responses are acceptable only when the user explicitly asks for a review.
 
@@ -370,7 +309,7 @@ Data modeling choices:
 - <choice 1>
 - <choice 2>
 
-Behavior simplifications (from Step 13):
+Behavior simplifications:
 - <what interpretation logic was removed or replaced>
 
 Trade-offs:
