@@ -54,13 +54,13 @@ Do not extract a method only to satisfy a narrative level. Narrative levels desc
 Allow small duplication when it appears only twice and keeps each story easier to read. Do not extract a method just because two places share a few simple lines; extract only when the duplication hides intent, is error-prone, or is likely to change together.
 
 > **Extraction gate:** Extract a method when **any** of these holds:
-> 1. The caller would **exceed its budget** without the extraction.
+> 1. The caller would **exceed its chunk budget** without the extraction.
 > 2. The group names a **cohesive business concept** the individual names cannot convey alone.
 > 3. The extraction keeps the caller at a **uniform level of abstraction**.
 > 4. The expression is **complex, repeated, or hides intent** a name would reveal.
 >
 > **Hard blockers (if any, DO NOT extract):**
-> 1. Caller already within budget and readable.
+> 1. Caller already within chunk budget and readable.
 > 2. Extraction does not make the caller easier to read.
 > 3. The extracted body contains only one simple chunk.
 > 4. The extracted method merely groups already clear calls and adds no domain concept.

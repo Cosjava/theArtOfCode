@@ -21,7 +21,7 @@ Use this skill when generating or refactoring data structures, data carriers, re
 
 ## Step 1 — Model the data first
 
-Before changing types or adding abstractions, identify the data the code is really manipulating.
+Before making changes, identify the data the code is really manipulating.
 
 Ask:
 
