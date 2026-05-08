@@ -13,8 +13,7 @@ Look for:
 - pipelines that are too long or too dense to remain readable
 
 Refactor toward functional programming when it improves clarity, simplicity, and predictability.
-Keep imperative code when side effects, exception handling, ordering, or sequencing are essential to understanding the behavior.
-
+Keep imperative code when the behavior depends on visible side effects, mutable state, or exception handling that would become harder to understand inside a pipeline.
 Do not make the code functional merely for style.
 
 Explain:
