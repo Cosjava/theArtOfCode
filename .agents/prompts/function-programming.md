@@ -14,7 +14,6 @@ Look for:
 
 Refactor toward functional programming when it improves clarity, simplicity, and predictability.
 Keep imperative code when the behavior depends on visible side effects, mutable state, or exception handling that would become harder to understand inside a pipeline.
-Do not make the code functional merely for style.
 
 Explain:
 - which parts were made more functional and why
