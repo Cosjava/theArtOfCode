@@ -8,11 +8,10 @@ argument-hint: 'Provide the code to review, along with any relevant context such
 
 ## Purpose
 
+Review code according to the **handling failure** principles from *The Art of Code*, Chapter 7.
 Use this skill to review existing code and identify weaknesses in failure handling.
-
-The goal is not to rewrite the code directly. The goal is to understand how failures are currently handled, detect error-handling antipatterns, and propose safer, clearer, and more graceful alternatives.
-
-Do not apply code changes unless explicitly asked. Provide recommendations, examples, and reasoning so a human developer can decide what to change.
+The goal is to understand how failures are currently handled, detect error-handling antipatterns, and propose safer, clearer, and more graceful alternatives.
+This skill is diagnostic-only: do not modify code unless explicitly asked. Provide recommendations, examples, and reasoning so a human developer can decide what to change.
 
 ## 1. Build a higher-level understanding of the failure story
 
@@ -30,14 +29,27 @@ Ask:
 - Does the code need to recover, retry, fall back, propagate, or fail fast?
 - Does the code expose technical details outside the layer where they belong?
 
+List operations that may fail. For each failure path, identify:
+
+- The operation that may fail.
+- The likely exception, error, or invalid result.
+- The category of failure.
+- The current handling strategy.
+- The caller or user affected by the failure.
+
 Classify each failure path as one of the following:
 
-- business logic error
-- technical issue
-- programming error
-- fatal error
+- **Business logic error**: an expected failure caused by a user action or business rule violation. The system is working correctly, but the request cannot be accepted. Examples: rejected unauthorized access, missing required field, expired discount code, unsupported file format, duplicate email address.
 
-Use that classification to judge whether the current handling strategy makes sense.
+- **Technical issue**: a failure caused by something the application depends on but does not fully control. The code may be correct, but the surrounding infrastructure failed. Examples: database unavailable, network timeout, file system permission denied, external API down, SMTP server unreachable.
+
+- **Programming error**: a defect in the code itself. The program reached a state that should not happen if the code is correct. Examples: `NullPointerException`, invalid assumptions, impossible branch reached, index out of bounds, broken invariant, wrong type cast.
+
+- **Fatal error**: a severe runtime or system-level failure that usually cannot be handled safely inside normal application logic. Examples: out-of-memory error, stack overflow, corrupted process state, JVM crash, container being killed, unrecoverable resource exhaustion.
+
+Use that classification to judge whether the current handling strategy makes sense. A business logic error should usually produce a clear user-facing response. A technical issue should usually be logged and translated or recovered from. A programming error should usually fail fast and be fixed. A fatal error should usually be left to the runtime, container, or supervisor to handle.
+
+Security is cross-cutting rather than a separate failure category. Classify the immediate failure according to its cause, but always flag security impact separately.
 
 ## 2. Signals that should trigger the workflow
 
@@ -108,99 +120,54 @@ When uncertain, say so and explain what information is missing.
 
 Follow this workflow in order.
 
-### Step 1: Identify the failure paths
+### Step 1: Trigger and group signals
 
-List the operations that may fail.
+From section 2, list only the signals that are actually present in the code: `Boundary protection`, `Lazy catch`, `Logging`, `Flawed handling strategy`.
 
-For each failure path, identify:
+### Step 2: Review per triggered signal
 
-- The operation that may fail.
-- The likely exception, error, or invalid result.
-- The category of failure.
-- The current handling strategy.
-- The caller or user affected by the failure.
+Workflow for this step:
+1. Pick one triggered signal.
+2. Run only the checks tied to that signal family.
+3. Write one review.
+4. Repeat for the next triggered signal.
 
-### Step 2: Check whether the boundary is defended
+For each triggered signal, produce one review item with:
 
-Review entry points first.
+- Severity (`high`, `medium`, or `low`).
+- Location or code area.
+- Exact signal detected.
+- Failure classification.
+- Why it is a problem in this context.
+- Risk if unchanged.
+- Proposed handling strategy (validate, translate, log, retry, propagate, fallback, or fail fast).
+- Logging recommendation for this finding (level + context to include/avoid, or explicitly "no log needed").
+- Confidence level.
+- Assumptions/unknowns (required when confidence is `medium` or `low`).
 
-Look for validation, sanitization, authentication, and authorization. If input can cross the boundary unchecked, flag it as an early failure-handling problem.
+Example:
+- Triggered signal: generic `catch (Exception)`.
+- Signal family: `Lazy catch`.
+- Checks to run: catch specificity, try-block scope, absorbed categories.
+- Checks to skip unless separately triggered: logging and boundary-protection checks.
 
-### Step 3: Review the catch blocks
+### Step 3: Perform cross-signal consistency checks
 
-For each catch block, check:
+After per-signal items, check system-level consistency:
 
-- Is the caught type specific enough?
-- Is the protected block narrow enough?
-- Does the catch block handle one meaningful chunk of behavior?
-- Does the catch block accidentally absorb programming errors?
-- Is the failure path understandable from the code?
+- Are technical failures translated at the right layer?
+- Are business failures separated from technical failures in the public contract?
+- Is logging done once at the right boundary with enough context?
+- Is retry/fallback policy explicit and compatible with idempotency?
+- Are programming/fatal errors incorrectly treated as recoverable?
 
-Propose more specific catches or narrower protected blocks when useful.
+If a strategy depends on business requirements, present options and trade-offs instead of inventing behavior.
 
-### Step 4: Review the logging strategy
+## 5. Diagnostic boundary
 
-For each logged failure, check:
-
-- Should this failure be logged?
-- Is the log level appropriate?
-- Is the message unique and useful?
-- Does it include enough context for diagnosis?
-- Does it avoid sensitive data?
-- Is the original exception included?
-- Is the same error logged elsewhere?
-- Could the log statement itself fail?
-
-Propose better log messages, but do not expose sensitive information in the proposal.
-
-### Step 5: Review exception translation
-
-Check whether technical failures cross architectural boundaries as raw implementation details.
-
-When appropriate, propose:
-
-- Translating low-level exceptions into domain-specific exceptions.
-- Returning controlled error responses at API boundaries.
-- Preserving the original cause.
-- Keeping technical details in logs, not in user-facing messages.
-
-### Step 6: Review fallback and recovery strategy
-
-For technical issues, check whether the code should:
-
-- Retry.
-- Fall back to a safe degraded behavior.
-- Return cached data.
-- Requeue work.
-- Stop processing and report a clear error.
-- Propagate the failure to a higher layer.
-- Fail fast.
-
-Do not invent a fallback that changes business behavior. If the right strategy depends on requirements, state the options and the trade-off.
-
-### Step 7: Review what should not be handled
-
-Identify failures that should probably not be caught locally:
-
-- Programming errors that should be fixed in the code.
-- Fatal errors that should not be recovered from inside the corrupted process.
-- Failures that need a higher-level policy.
-- Failures already handled by a global error handler.
-
-Explain why leaving the failure to another layer may be clearer.
-
-## 5. Do not modify the code
-
-This skill is diagnostic.
-
-Do not rewrite files.  
-Do not apply patches.  
-Do not silently change exception types, public APIs, return types, or fallback behavior.  
-Do not remove logs or catches directly.
-
-Instead, propose changes with enough detail for a developer to review and apply them deliberately.
-
-You may include small illustrative snippets when they clarify the recommendation, but label them as examples.
+Do not rewrite files, apply patches, or silently change exception types, public APIs, return types, fallback behavior, logs, or catches.
+Instead, propose changes with enough detail for a developer to review and apply deliberately.
+You may include small illustrative snippets when they clarify a recommendation, but label them as examples.
 
 ## 6. Review your own analysis
 
@@ -215,7 +182,6 @@ Check:
 - Did you preserve public contracts and architectural boundaries?
 - Did you avoid proposing fallback behavior that changes business rules?
 - Did you clearly separate confirmed problems from uncertain risks?
-- Did you remember that the goal is to propose changes, not perform them?
 
 Adjust the recommendations if any proposal introduces new confusion, hides a failure, or changes behavior without justification.
 
@@ -226,28 +192,47 @@ Return a structured review.
 Include:
 
 1. **Failure map**  
-   A short summary of the main success path and the identified failure paths.
+   A short summary of the main success path and the identified failure paths, including the failure classification for each path (`business logic error`, `technical issue`, `programming error`, or `fatal error`).
 
-2. **Failure classification**  
-   For each failure, classify it as a business logic error, technical issue, programming error, or fatal error.
-
-3. **Findings**  
-   For each issue, provide:
+2. **Findings**  
+   For each issue, provide, ordered by severity (highest first):
+    - Severity (`high`, `medium`, or `low`).
     - The location or code area.
     - The signal detected.
+    - The failure classification.
     - Why it is a problem.
     - The risk.
-    - The proposed improvement.
+    - The proposed handling recommendation.
     - Confidence level: high, medium, or low.
+    - Assumptions/unknowns (required when confidence is medium or low).
 
-4. **Logging recommendations**  
-   Mention which failures should be logged, at what level, and what context should be included or avoided.
-
-5. **Handling strategy recommendations**  
-   Propose whether each failure should be validated, translated, logged, retried, propagated, handled with fallback, or allowed to fail fast.
-
-6. **Human-review notes**  
+3**Human-review notes**  
    Highlight decisions that require developer judgment, product requirements, security review, or architecture review.
 
-7. **No automatic changes**  
+4**No automatic changes**  
    End by confirming that no code was modified and that the result is a proposal for human review.
+
+Canonical example:
+
+```text
+1. Failure map
+- Success path: validate input -> persist user -> send notification.
+- Failure path: DB timeout during persist -> technical issue.
+
+2. Findings (ordered by severity)
+- Severity: high
+  - Location: UserService.saveUser
+  - Signal: Flawed handling strategy
+  - Failure classification: technical issue
+  - Why: timeout is translated without operation context
+  - Risk: poor triage and delayed incident response
+  - Handling recommendation: translate with operation-specific error code
+  - Confidence: medium
+  - Assumptions/unknowns: assumes no global structured error mapper
+
+3. Human-review notes
+- Confirm whether a global handler already enforces one-log-per-failure.
+
+4. No automatic changes
+- No code modified; proposal only.
+```

@@ -4,6 +4,8 @@ description: Generate code following the **Narrative Code** principles from *The
 
 # Narrative Code Generator
 
+Generate or refactor code following the **Narrative Code** principles from *The Art of Code*, Chapter 2.
+
 The user will describe what the code should do. You will produce code structured as a clear story: identifiable plot, correct narrative levels, and well-named useful characters.
 
 ---
@@ -42,7 +44,7 @@ Build the code across four method levels — **Action**, **Scene**, **Chapter**,
 |---|---------------:|---|---|
 | **Action** | Up to 3 chunks | Performs one low-level operation. | Does not compose other narrative methods: Actions, Scenes, or Chapters. If it needs to call another Action, promote it to a Scene. **Reusability rule:** When identical logic appears in multiple Actions (e.g., "validate required field"), create a single parameterized Action and call it from both places. Pass specifics as parameters: field names, thresholds, error messages, domain concepts. The parameterized Action is still a single narrative step. Example: instead of `validateLastName()` and `validateEmail()`, create `validateRequiredField(value, fieldName, errorMessage)` and call it twice. Calling stateless utilities, framework APIs, external clients, repositories, or Action-level operations from other code units is allowed. **Error handling:** may catch an error only when the handling is simple and local: use a default value, throw a more appropriate exception, or transform a technical failure into a meaningful domain exception. |
 | **Scene** | Up to 6 chunks | Focuses on one recognizable step of the story. | Composes Actions plus simple supporting logic: 1–2 conditionals, 1 loop, or error handling. A Scene must call at least one Action. **Downgrade rule:** If a method that would be a Scene calls no Action — only direct inline logic — demote it to an Action. **Error handling:** may catch errors when the failure belongs to this Scene and the handling remains local: apply a fallback, translate the error into a clearer domain exception, or add context before rethrowing. If the error handling coordinates several recovery steps or affects the broader use case, promote it to a Chapter.|
-| **Chapter** | Up to 8 chunks | Orchestrates one business goal. | Calls at least one Scene and may include occasional direct Actions. Simple supporting logic is allowed: 1–2 conditionals, 1 loop, or error handling. The reader should understand the full story without opening the Scenes. Keep the body short: complex logic should be decomposed into smaller Scenes or Actions, not inlined here. A Chapter must call at least one Scene. **Downgrade rule:** If a method that would be a Chapter calls no Scene — only Actions or direct inline logic — demote it to a Scene. **Error handling:** may coordinate failures that affect the business goal: recover after a failed Scene, trigger compensating actions, decide whether the flow can continue, or translate lower-level errors into a use-case/domain-level failure. If error handling spans several business goals, promote it to a Table of contents method.|
+| **Chapter** | Up to 8 chunks | Orchestrates one business goal. | Calls at least one Scene and may include occasional direct Actions. Simple supporting logic is allowed: 1–2 conditionals, 1 loop, or error handling. The reader should understand the full story without opening the Scenes. Keep the body short: complex logic should be decomposed into smaller Scenes or Actions, not inlined here. A Chapter must call at least one Scene. **Downgrade rule:** If a method that would be a Chapter calls no Scene — only Actions or direct inline logic — demote it to a Scene. **Error handling:** may coordinate failures that affect the business goal: recover after a failed Scene, trigger compensating actions, decide whether the flow can continue, or translate lower-level errors into a use-case/domain-level failure. |
 | **Table of contents** | Up to 8 chunks | Orchestrates a complex use case. | Calls at least one Chapter and may include occasional direct Scenes or Actions. Keep the body short and orchestration-focused, with only light supporting logic or error handling. A Table of contents method must call at least one Chapter. **Downgrade rule:** If a method that would be a Table of contents calls no Chapter — only Scenes, Actions, or direct inline logic — demote it to a Chapter. **Error handling:** may coordinate failures across Chapters, decide whether the complete use case continues or stops, trigger high-level compensation, or translate the final failure into an application-level outcome. Low-level recovery belongs in Actions, Scenes, or Chapters.|
 
 Methods must appear top-to-bottom: **Table of contents → Chapters → Scenes → Actions**, with each group ordered by call sequence. A reader should never have to scroll up to understand a method they just read.
@@ -94,11 +96,10 @@ Variables are the characters of the story. Apply these rules:
 
 ---
 
-## Step 4 — Review the narrative
+## Step 4 - Review and Mandatory Audit (must pass before output)
 
-Before finalizing, review the generated or refactored code against the narrative rules.
+Before finalizing, review the generated or refactored code against the narrative rules and run this audit:
 
-Check:
 - Does every extracted method earn its place?
 - Did any method exist only to satisfy a narrative level?
 - Are there wrapper methods that merely group already clear calls?
@@ -107,8 +108,17 @@ Check:
 - Are chunks at a consistent level of abstraction?
 - Would inlining a method make the story clearer?
 - Is duplicated code small enough that extracting it would make the story worse?
+- Chunk count per method is within its narrative level budget.
+- Each method has an explicit concern tag (`Defense`, `Archiving`, etc.) in the audit notes.
+- No forbidden call edge exists (for example `Scene -> Scene`).
+- No one-line wrapper exists unless it provides one of:
+    - reuse in **3 or more** call sites,
+    - encapsulation of non-trivial complexity that is clearer behind a domain-specific name.
+- The high-level caller remains within budget after extraction, and still reads clearly if trivial wrappers are inlined.
 
 If a rule is technically satisfied but the code reads worse, revise the code. Prefer the clearest story with the least indirection over strict hierarchy compliance.
+
+If any audit item fails, rewrite and rerun this step before final output.
 
 ---
 
