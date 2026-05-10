@@ -1,6 +1,6 @@
 ---
 name: clarity-of-intent
-description: 'Make the data model reveal the purpose of the code.'
+description: "Refactor or generate code so data models reveal intent through explicit domain types, precise names, small carriers, invariants, and immutability. Use when code has ambiguous primitives, unclear construction, nested structures that hide meaning, mutable data without need, or scattered validation; preserve external API and persistence contracts by applying wrappers in internal layers."
 ---
 
 # Clarity of Intent Generator
@@ -132,7 +132,9 @@ A small data carrier earns its place when it gives a meaningful name to values t
 
 Deeply nested structures can obscure intent. When a nested structure forces the reader to mentally reconstruct the data shape, prefer a flatter explicit model.
 
-Watch for and **must flatten**:
+Flatten only when the flatter representation with explicit names (composite keys or carrier records) is easier to understand at call sites and in iteration or aggregation logic.
+
+Common flattening candidates:
 
 - nested structures: structures that contain other structures inside them, such as maps of maps, dictionaries of dictionaries, maps of lists, lists of maps, nested objects, or nested arrays
   - `Map<K1, Map<K2, V>>` → `Map<CompositeKey(K1, K2), V>` with an explicit composite key record
@@ -148,7 +150,7 @@ Watch for and **must flatten**:
 Prefer composite keys, named carriers, or explicit intermediate types when they make the structure clearer.
 
 ```java
-// harder to reason about — nested structure, must flatten
+// harder to reason about — nested structure, candidate for flattening
 Map<CustomerId, Map<ProductId, Discount>> discounts;
 
 // clearer — one flat map with explicit composite key
@@ -157,7 +159,7 @@ Map<CustomerProductKey, Discount> discounts;
 record CustomerProductKey(CustomerId customerId, ProductId productId) {}
 ```
 
-**Exception:** Flatten only when it improves understanding. Do not flatten a structure that naturally represents a meaningful hierarchy and is used as a hierarchy (e.g., a tree where you regularly access intermediate levels). But when you are iterating all leaf values or aggregating across all keys, flattening is usually the right choice.
+Do not flatten a structure that naturally represents a meaningful hierarchy and is used as a hierarchy (e.g., a tree where you regularly access intermediate levels). But when you are iterating all leaf values or aggregating across all keys, flattening is usually the right choice.
 
 ---
 

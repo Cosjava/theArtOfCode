@@ -1,16 +1,20 @@
 ---
 name: sustainability
-description: Apply chapter 8 sustainability patterns (Lean Packaging Lean Storage, Lean Communication, Efficient Execution, Memory Efficiency) to review or improve software efficiency by reducing dependency bloat, dead build artifacts, storage waste, avoidable network traffic, unnecessary CPU load, and excess memory retention; use when asked to optimize package size, dependency trees, retention policies, endpoint design, payload size, caching, polling behavior, static asset transfer, algorithm/backend efficiency, workload smoothing, cache sizing, or memory footprint.
+description: Review software efficiency using chapter 8 sustainability patterns (Lean Packaging, Lean Storage, Lean Communication, Efficient Execution, Memory Efficiency). Use when asked to assess dependency bloat, storage growth, avoidable network traffic, CPU inefficiency, or memory retention and provide recommendations without modifying code.
 ---
 
 # Sustainability Patterns
 
-Use this skill to review or design improvements for chapter 8 sustainability patterns:
+Use this skill to review sustainability risks and propose improvements based on the green patterns in Chapter 8 of *The Art of Code*:
 - Lean Packaging
 - Lean Storage
 - Lean Communication
 - Efficient Execution
 - Memory Efficiency
+
+## Mode
+
+This skill is review-only. Produce findings and recommendations; do not modify code, configuration, infrastructure, or data through this workflow.
 
 ## Scope
 
@@ -26,7 +30,7 @@ Focus on practical efficiency issues that waste:
 
 1. Identify whether the request is about packaging, storage, communication, execution efficiency, memory efficiency, or a mix.
 2. Detect concrete waste signals.
-3. Propose the smallest safe change that preserves behavior.
+3. Propose the smallest safe improvement recommendation that preserves behavior.
 4. State severity (high/medium/low) based on the expected impact of the waste in production and the improvement from the change.
 5. Evaluate trade-offs.
 

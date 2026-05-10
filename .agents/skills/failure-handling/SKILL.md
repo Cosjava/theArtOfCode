@@ -1,5 +1,5 @@
 ---
-name: failure-handling-review
+name: failure-handling
 description: 'Review existing code to identify weaknesses in failure handling and propose safer, clearer, and more graceful alternatives without modifying the code directly.'
 ---
 
@@ -186,7 +186,6 @@ Canonical example:
   - Why: timeout is translated without operation context
   - Risk: poor triage and delayed incident response
   - Handling recommendation: translate with operation-specific error code
-  - Logging recommendation: ERROR once at boundary with correlation id; avoid PII
   - Confidence: medium
   - Assumptions/unknowns: assumes no global structured error mapper
 
