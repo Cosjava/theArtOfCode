@@ -1,7 +1,6 @@
 ---
 name: clarity-of-intent
 description: 'Make the data model reveal the purpose of the code.'
-argument-hint: 'Describe the code you want to generate or refactor (e.g., "generate a data class for user profiles", "refactor this DTO to follow clarity of intent principles")'
 ---
 
 # Clarity of Intent Generator
@@ -282,7 +281,9 @@ When refactoring existing code, apply changes from the smallest blast radius to 
 Each step must preserve behavior and keep the code compiling.
 
 **Audit checklist before finalizing:**
-- [ ] All nested structures are flattened into composite keys?
+- [ ] All primitive values with rules, units, identity, or ambiguity wrapped in domain types?
+- [ ] All vague names replaced with precise domain concepts?
+- [ ] All related values grouped into explicit carriers?
 - [ ] All positional tuples or arrays replaced with named records?
 - [ ] All nested DTOs/objects that hide intent reshaped?
 - [ ] If there are exceptions, are they explicitly justified in comments?

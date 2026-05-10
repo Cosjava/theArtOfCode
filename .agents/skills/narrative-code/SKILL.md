@@ -1,5 +1,6 @@
 ---
-description: Generate code following the **Narrative Code** principles from *The Art of Code*, Chapter 2.
+name: narrative-code
+description: Refactor or generate code using Narrative Code principles from The Art of Code, Chapter 2. Use when code has long methods, mixed abstraction levels, unclear orchestration, or vague naming, and you need plot-driven structure (Action, Scene, Chapter, Table of contents) plus a narrative call graph.
 ---
 
 # Narrative Code Generator
@@ -10,23 +11,23 @@ The user will describe what the code should do. You will produce code structured
 
 ---
 
-## Step 1 — Identify the plot
+## Step 1 - Identify the plot
 
 Before writing a single line, determine which plot this code belongs to:
 
-- **Delivering** — pushing data beyond system boundaries (emails, API calls, notifications, file uploads)
-- **Cleaning** — removing expired or useless data (purging old records, clearing temp files)
-- **Defense** — guarding integrity (input validation, authentication, authorization, encryption)
-- **Archiving** — storing, retrieving, updating, or deleting data (CRUD, document stores)
-- **Transformation** — refining raw data into useful form, such as enrichment, filtering, aggregation, formatting, normalization, or deriving new values. If the data is merely cleaned or adapted before storage, treat the main plot as **Archiving**.
+- **Delivering** - pushing data beyond system boundaries (emails, API calls, notifications, file uploads)
+- **Cleaning** - removing expired or useless data (purging old records, clearing temp files)
+- **Defense** - guarding integrity (input validation, authentication, authorization, encryption)
+- **Archiving** - storing, retrieving, updating, or deleting data (CRUD, document stores)
+- **Transformation** - refining raw data into useful form, such as enrichment, filtering, aggregation, formatting, normalization, or deriving new values. If the data is merely cleaned or adapted before storage, treat the main plot as **Archiving**.
 
 ---
 
-## Step 2 — Structure the code at the right narrative level
+## Step 2 - Structure the code at the right narrative level
 
 ### Chunk definition
 
-A **chunk** is a meaningful unit of code that reads as a single recognizable step — such as a method call, a conditional block, a loop, an error-handling block, a pipeline, or a system-boundary interaction.
+A **chunk** is a meaningful unit of code that reads as a single recognizable step - such as a method call, a conditional block, a loop, an error-handling block, a pipeline, or a system-boundary interaction.
 
 A chunk is **too small** when it has no meaning on its own (a setup assignment, a single arithmetic operation).
 
@@ -38,16 +39,16 @@ A chunk is **too large** when it combines several recognizable steps:
 
 ### Method levels
 
-Build the code across four method levels — **Action**, **Scene**, **Chapter**, and **Table of contents** — from lowest-level detail to highest-level orchestration.
+Build the code across four method levels - **Action**, **Scene**, **Chapter**, and **Table of contents** - from lowest-level detail to highest-level orchestration.
 
 | Level |         Budget | Purpose | Rule |
 |---|---------------:|---|---|
 | **Action** | Up to 3 chunks | Performs one low-level operation. | Does not compose other narrative methods: Actions, Scenes, or Chapters. If it needs to call another Action, promote it to a Scene. **Reusability rule:** When identical logic appears in multiple Actions (e.g., "validate required field"), create a single parameterized Action and call it from both places. Pass specifics as parameters: field names, thresholds, error messages, domain concepts. The parameterized Action is still a single narrative step. Example: instead of `validateLastName()` and `validateEmail()`, create `validateRequiredField(value, fieldName, errorMessage)` and call it twice. Calling stateless utilities, framework APIs, external clients, repositories, or Action-level operations from other code units is allowed. **Error handling:** may catch an error only when the handling is simple and local: use a default value, throw a more appropriate exception, or transform a technical failure into a meaningful domain exception. |
-| **Scene** | Up to 6 chunks | Focuses on one recognizable step of the story. | Composes Actions plus simple supporting logic: 1–2 conditionals, 1 loop, or error handling. A Scene must call at least one Action. **Downgrade rule:** If a method that would be a Scene calls no Action — only direct inline logic — demote it to an Action. **Error handling:** may catch errors when the failure belongs to this Scene and the handling remains local: apply a fallback, translate the error into a clearer domain exception, or add context before rethrowing. If the error handling coordinates several recovery steps or affects the broader use case, promote it to a Chapter.|
-| **Chapter** | Up to 8 chunks | Orchestrates one business goal. | Calls at least one Scene and may include occasional direct Actions. Simple supporting logic is allowed: 1–2 conditionals, 1 loop, or error handling. The reader should understand the full story without opening the Scenes. Keep the body short: complex logic should be decomposed into smaller Scenes or Actions, not inlined here. A Chapter must call at least one Scene. **Downgrade rule:** If a method that would be a Chapter calls no Scene — only Actions or direct inline logic — demote it to a Scene. **Error handling:** may coordinate failures that affect the business goal: recover after a failed Scene, trigger compensating actions, decide whether the flow can continue, or translate lower-level errors into a use-case/domain-level failure. |
-| **Table of contents** | Up to 8 chunks | Orchestrates a complex use case. | Calls at least one Chapter and may include occasional direct Scenes or Actions. Keep the body short and orchestration-focused, with only light supporting logic or error handling. A Table of contents method must call at least one Chapter. **Downgrade rule:** If a method that would be a Table of contents calls no Chapter — only Scenes, Actions, or direct inline logic — demote it to a Chapter. **Error handling:** may coordinate failures across Chapters, decide whether the complete use case continues or stops, trigger high-level compensation, or translate the final failure into an application-level outcome. Low-level recovery belongs in Actions, Scenes, or Chapters.|
+| **Scene** | Up to 6 chunks | Focuses on one recognizable step of the story. | Composes Actions plus simple supporting logic: 1-2 conditionals, 1 loop, or error handling. A Scene must call at least one Action. **Downgrade rule:** If a method that would be a Scene calls no Action - only direct inline logic - demote it to an Action. **Error handling:** may catch errors when the failure belongs to this Scene and the handling remains local: apply a fallback, translate the error into a clearer domain exception, or add context before rethrowing. If the error handling coordinates several recovery steps or affects the broader use case, promote it to a Chapter.|
+| **Chapter** | Up to 8 chunks | Orchestrates one business goal. | Calls at least one Scene and may include occasional direct Actions. Simple supporting logic is allowed: 1-2 conditionals, 1 loop, or error handling. The reader should understand the full story without opening the Scenes. Keep the body short: complex logic should be decomposed into smaller Scenes or Actions, not inlined here. A Chapter must call at least one Scene. **Downgrade rule:** If a method that would be a Chapter calls no Scene - only Actions or direct inline logic - demote it to a Scene. **Error handling:** may coordinate failures that affect the business goal: recover after a failed Scene, trigger compensating actions, decide whether the flow can continue, or translate lower-level errors into a use-case/domain-level failure. |
+| **Table of contents** | Up to 8 chunks | Orchestrates a complex use case. | Calls at least one Chapter and may include occasional direct Scenes or Actions. Keep the body short and orchestration-focused, with only light supporting logic or error handling. A Table of contents method must call at least one Chapter. **Downgrade rule:** If a method that would be a Table of contents calls no Chapter - only Scenes, Actions, or direct inline logic - demote it to a Chapter. **Error handling:** may coordinate failures across Chapters, decide whether the complete use case continues or stops, trigger high-level compensation, or translate the final failure into an application-level outcome. Low-level recovery belongs in Actions, Scenes, or Chapters.|
 
-Methods must appear top-to-bottom: **Table of contents → Chapters → Scenes → Actions**, with each group ordered by call sequence. A reader should never have to scroll up to understand a method they just read.
+Methods must appear top-to-bottom: **Table of contents -> Chapters -> Scenes -> Actions**, with each group ordered by call sequence. A reader should never have to scroll up to understand a method they just read.
 
 **Extract a method only when it earns its place.**
 
@@ -71,27 +72,27 @@ When rules conflict, prefer the version that makes the caller easier to understa
 
 ### Method names
 
-A method name must tell the reader what happens and what it acts on — without opening the method body.
+A method name must tell the reader what happens and what it acts on - without opening the method body.
 
-- **Verb + subject**: always combine an action verb with the thing being acted on — `validateBirthDate`, `insertUser`, `checkEmailUniqueness`; never a bare verb (`validate`, `process`, `handle`)
-- **Precise scope**: the name must match exactly what the method does — `checkEmailUniqueness` not `checkEmail`; `validateBirthDate` not `validateDate`
+- **Verb + subject**: always combine an action verb with the thing being acted on - `validateBirthDate`, `insertUser`, `checkEmailUniqueness`; never a bare verb (`validate`, `process`, `handle`)
+- **Precise scope**: the name must match exactly what the method does - `checkEmailUniqueness` not `checkEmail`; `validateBirthDate` not `validateDate`
 - **Readable at the call site**: a reader must understand each step from its name alone; if they must open the method to follow the story, rename it
 
 ---
 
-## Step 3 — Variable names
+## Step 3 - Variable names
 
 | Variable kind | Naming rule | Example |
 |---|---|---|
 | Data | Descriptive noun, no abbreviations | `selectedUsersForExclusiveGift` |
-| Boolean | Phrased as a yes/no question — `is` or `has` prefix are both valid | `isUserBirthday`, `hasActiveSubscription` |
+| Boolean | Phrased as a yes/no question - `is` or `has` prefix are both valid | `isUserBirthday`, `hasActiveSubscription` |
 | Collection | Plural noun | `promotions`, `pendingOrders` |
 | Lambda / functional | Verb describing the action | `sendNotification`, `filterExpired` |
 
-Use **consistent domain vocabulary** — never mix `user`/`client`/`visitor` for the same concept.
+Use **consistent domain vocabulary** - never mix `user`/`client`/`visitor` for the same concept.
 
 Variables are the characters of the story. Apply these rules:
-- **Main character** (the central variable or parameter) appears first — first parameter or first line of the method body
+- **Main character** (the central variable or parameter) appears first - first parameter or first line of the method body
 - **Secondary characters** are declared as close as possible to where they are used, with the narrowest possible scope
 
 ---
@@ -122,7 +123,7 @@ If any audit item fails, rewrite and rerun this step before final output.
 
 ---
 
-## Step 5 — Output format
+## Step 5 - Output format
 
 Always end your response with output in this exact structure:
 
@@ -151,13 +152,13 @@ Example:
 ```text
 Narrative structure:
 Table of contents: handleUserRegistration (Defense + Archiving + Delivering)
-├── Chapter: createPendingUser (Defense + Archiving)
-│   ├── Scene: validateUserRegistration (Defense)
-│   │   ├── Action: validateMandatoryField
-│   │   ├── Action: validateBirthDate
-│   │   └── Action: validateEmail
-│   └── Scene: savePendingUser (Archiving)
-│       └── Action: insertUser
-└── Chapter: sendConfirmationEmail (Delivering)
-    └── Action: sendEmail
+|-- Chapter: createPendingUser (Defense + Archiving)
+|   |-- Scene: validateUserRegistration (Defense)
+|   |   |-- Action: validateMandatoryField
+|   |   |-- Action: validateBirthDate
+|   |   `-- Action: validateEmail
+|   `-- Scene: savePendingUser (Archiving)
+|       `-- Action: insertUser
+`-- Chapter: sendConfirmationEmail (Delivering)
+    `-- Action: sendEmail
 ```

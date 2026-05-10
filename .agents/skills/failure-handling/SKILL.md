@@ -1,7 +1,6 @@
 ---
 name: failure-handling-review
 description: 'Review existing code to identify weaknesses in failure handling and propose safer, clearer, and more graceful alternatives without modifying the code directly.'
-argument-hint: 'Provide the code to review, along with any relevant context such as the expected behavior, the layer of the system, and any known issues or requirements related to failure handling.'
 ---
 
 # Failure Handling Review Skill
@@ -12,6 +11,12 @@ Review code according to the **handling failure** principles from *The Art of Co
 Use this skill to review existing code and identify weaknesses in failure handling.
 The goal is to understand how failures are currently handled, detect error-handling antipatterns, and propose safer, clearer, and more graceful alternatives.
 This skill is diagnostic-only: do not modify code unless explicitly asked. Provide recommendations, examples, and reasoning so a human developer can decide what to change.
+
+## Diagnostic boundary
+
+Do not rewrite files, apply patches, or silently change exception types, public APIs, return types, fallback behavior, logs, or catches.
+Instead, propose changes with enough detail for a developer to review and apply deliberately.
+You may include small illustrative snippets when they clarify a recommendation, but label them as examples.
 
 ## 1. Build a higher-level understanding of the failure story
 
@@ -116,60 +121,14 @@ Skip or soften the recommendation when:
 
 When uncertain, say so and explain what information is missing.
 
-## 4. Review the failure handling step by step
+## 4. Execution flow
 
-Follow this workflow in order.
+Execution order:
+1. Detect triggered signals from section 2.
+2. Keep only the signals justified by section 3.
+3. Produce the final report exactly in section 6 format.
 
-### Step 1: Trigger and group signals
-
-From section 2, list only the signals that are actually present in the code: `Boundary protection`, `Lazy catch`, `Logging`, `Flawed handling strategy`.
-
-### Step 2: Review per triggered signal
-
-Workflow for this step:
-1. Pick one triggered signal.
-2. Run only the checks tied to that signal family.
-3. Write one review.
-4. Repeat for the next triggered signal.
-
-For each triggered signal, produce one review item with:
-
-- Severity (`high`, `medium`, or `low`).
-- Location or code area.
-- Exact signal detected.
-- Failure classification.
-- Why it is a problem in this context.
-- Risk if unchanged.
-- Proposed handling strategy (validate, translate, log, retry, propagate, fallback, or fail fast).
-- Logging recommendation for this finding (level + context to include/avoid, or explicitly "no log needed").
-- Confidence level.
-- Assumptions/unknowns (required when confidence is `medium` or `low`).
-
-Example:
-- Triggered signal: generic `catch (Exception)`.
-- Signal family: `Lazy catch`.
-- Checks to run: catch specificity, try-block scope, absorbed categories.
-- Checks to skip unless separately triggered: logging and boundary-protection checks.
-
-### Step 3: Perform cross-signal consistency checks
-
-After per-signal items, check system-level consistency:
-
-- Are technical failures translated at the right layer?
-- Are business failures separated from technical failures in the public contract?
-- Is logging done once at the right boundary with enough context?
-- Is retry/fallback policy explicit and compatible with idempotency?
-- Are programming/fatal errors incorrectly treated as recoverable?
-
-If a strategy depends on business requirements, present options and trade-offs instead of inventing behavior.
-
-## 5. Diagnostic boundary
-
-Do not rewrite files, apply patches, or silently change exception types, public APIs, return types, fallback behavior, logs, or catches.
-Instead, propose changes with enough detail for a developer to review and apply deliberately.
-You may include small illustrative snippets when they clarify a recommendation, but label them as examples.
-
-## 6. Review your own analysis
+## 5. Review your own analysis
 
 Before returning the result, review your findings.
 
@@ -185,7 +144,7 @@ Check:
 
 Adjust the recommendations if any proposal introduces new confusion, hides a failure, or changes behavior without justification.
 
-## 7. Expected output
+## 6. Expected output
 
 Return a structured review.
 
@@ -206,10 +165,10 @@ Include:
     - Confidence level: high, medium, or low.
     - Assumptions/unknowns (required when confidence is medium or low).
 
-3**Human-review notes**  
+3. **Human-review notes**  
    Highlight decisions that require developer judgment, product requirements, security review, or architecture review.
 
-4**No automatic changes**  
+4. **No automatic changes**  
    End by confirming that no code was modified and that the result is a proposal for human review.
 
 Canonical example:
@@ -227,6 +186,7 @@ Canonical example:
   - Why: timeout is translated without operation context
   - Risk: poor triage and delayed incident response
   - Handling recommendation: translate with operation-specific error code
+  - Logging recommendation: ERROR once at boundary with correlation id; avoid PII
   - Confidence: medium
   - Assumptions/unknowns: assumes no global structured error mapper
 
