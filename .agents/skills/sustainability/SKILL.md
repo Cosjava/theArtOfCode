@@ -44,9 +44,9 @@ Look for:
 - Missing minification/compression/tree-shaking where relevant.
 
 Suggested tools:
-- Maven dependency plugin.
-- DepClean.
-- `jdeps`.
+- Maven dependency plugin (for Java applications).
+- DepClean (for Java applications).
+- `jdeps` (for Java applications).
 - Webpack tree shaking.
 - Visual Studio "Remove Unused References" (.NET).
 
@@ -80,7 +80,7 @@ Design heuristics:
 - Prefer one well-shaped call over multiple calls when data belongs to one screen action.
 - Use cache tiers with explicit expiry policies.
 - Use offline-first and batched sync when interaction is bursty.
-- Choose polling vs push based on real update cadence and connection cost.
+- Use push for high-cadence or latency-sensitive updates; use polling for low-cadence updates where persistent connections cost more than periodic checks.
 - Return only needed fields (dedicated endpoints or selective query mechanisms).
 - Use lazy loading and right-sized images/resources for device/network conditions.
 
@@ -101,7 +101,7 @@ Design heuristics:
 - Tune data access paths (indexes/query shape) and reduce round trips.
 - Use queueing, batching, and scheduling to smooth load over time.
 - Apply race-to-idle principle: avoid underutilized tiny batches; finish efficiently then return to low-power state.
-- Consider native execution options (for example AOT/native image) when startup and runtime overhead are significant and operational constraints allow.
+- For Java applications, consider native execution options (for example AOT/native image via GraalVM) when startup and runtime overhead are significant and operational constraints allow.
 
 ## Memory Efficiency checks
 
@@ -118,7 +118,7 @@ Design heuristics:
 - Acquire resources late and release them early with language-safe cleanup constructs.
 - Bound every cache and define explicit eviction strategy.
 - Prefer lightweight structures and primitive representations when nullability is not required.
-- Treat gradual heap growth and rising GC frequency as signals to investigate retention issues.
+- For Java applications, treat gradual heap growth and rising GC frequency as signals to investigate retention issues.
 
 ## Output format
 
