@@ -1,6 +1,6 @@
 ---
 name: clarity-of-intent
-description: "Refactor or generate code so data models reveal intent through explicit domain types, precise names, small carriers, invariants, and immutability. Use when code has ambiguous primitives, unclear construction, nested structures that hide meaning, mutable data without need, or scattered validation; preserve external API and persistence contracts by applying wrappers in internal layers."
+description: "Refactor or generate code so data models reveal intent through explicit domain types, precise names, small carriers, invariants, and immutability. Trigger on explicit requests for a clarity of intent refactor, data model refactor, or domain type review. Do NOT trigger on general architecture reviews, failure handling reviews, sustainability audits, or code quality reviews — use the architecture-review, failure-handling, or sustainability skills for those."
 ---
 
 # Clarity of Intent Generator
@@ -56,7 +56,11 @@ A signal only justifies action if the change earns its place. Skip the change wh
 - the abstraction is more obscure than the primitive it replaces
 - it only moves complexity elsewhere
 
-Use names that reveal the role of the data:
+---
+
+## Step 3 — Use names that reveal the role of the data
+
+Before wrapping any type, ensure names carry meaning:
 
 - **Types / carriers / categories**: precise domain nouns, such as `EmailAddress`, `Money`, `CustomerId`, `PaymentStatus`.
 - **Fields / properties / parameters**: names that reveal meaning and unit, such as `weightInPounds`, `amountIncludingTax`, `expiresAt`.
@@ -64,13 +68,15 @@ Use names that reveal the role of the data:
 
 Avoid vague names such as `Data`, `Info`, `Payload`, `Wrapper`, `Helper`, `value`, `type`, `date`, or `flag`, unless they are established project conventions.
 
+Renaming alone is often the smallest and safest change. Apply it before reaching for a new type.
+
 ---
 
-## Step 3 — Make domain concepts explicit
+## Step 4  — Make domain concepts explicit
 
-Replace a primitive with a domain type **only when the type can carry a rule, a unit, an identity, or a state the primitive cannot enforce on its own**. Naming alone is not a reason to wrap.
+Replace any raw type — primitive or object — with a domain type **only when the new type can carry a rule, a unit, an identity, or a state the raw type cannot enforce on its own**. Naming alone is not a reason to wrap.
 
-| Primitive | Useful domain type | Triggers extraction when… |
+| Raw type | Useful domain type | Triggers extraction when… |
 |---|---|---|
 | `String email` | `EmailAddress` | format must be validated |
 | `int age` | `Age` | a valid range exists |
@@ -80,6 +86,8 @@ Replace a primitive with a domain type **only when the type can carry a rule, a 
 | `String id` | `CustomerId`, `OrderId` | swapping different IDs is plausible |
 | `String type` | enum or sealed type | values come from a closed set |
 | `boolean active` | `AccountStatus` | more than two states exist |
+| `LocalDate date` | `SubscriptionStartDate`, `InvoiceDueDate` | timezone assumptions exist, or the role of the date is ambiguous |
+| `LocalDateTime timestamp` | `CreatedAt`, `ExpiresAt` | multiple timestamps exist and their roles can be confused |
 
 ```java
 // before
@@ -99,7 +107,7 @@ If none of the triggers above apply, keep the primitive.
 
 ---
 
-## Step 4 — Use small explicit data carriers
+## Step 5 — Use small explicit data carriers
 
 When several values travel together and represent one concept, group them into a small explicit data carrier.
 
@@ -124,11 +132,11 @@ over unrelated parameters, generic maps, arrays, or tuples.
 
 A small data carrier earns its place when it gives a meaningful name to values that already belong together.
 
-> **Step 4 vs Step 5** — Use Step 4 when loose values already belong together and need a named carrier. Use Step 5 when an existing nested structure hides intent and should be reshaped.
+> **Step 5 vs Step 6** — Use Step 5 when loose values already belong together and need a named carrier. Use Step 6 when an existing nested structure hides intent and should be reshaped.
 
 ---
 
-## Step 5 — Flatten structures when they hide meaning
+## Step 6 — Flatten structures when they hide meaning
 
 Deeply nested structures can obscure intent. When a nested structure forces the reader to mentally reconstruct the data shape, prefer a flatter explicit model.
 
@@ -147,8 +155,6 @@ Common flattening candidates:
 
 **When flattening, always create an explicit composite key or carrier record** to name the grouped dimensions. Never leave a flat map with raw primitive keys if the original was nested.
 
-Prefer composite keys, named carriers, or explicit intermediate types when they make the structure clearer.
-
 ```java
 // harder to reason about — nested structure, candidate for flattening
 Map<CustomerId, Map<ProductId, Discount>> discounts;
@@ -163,15 +169,33 @@ Do not flatten a structure that naturally represents a meaningful hierarchy and 
 
 ---
 
-## Step 6 — Prefer immutable data when possible
+## Step 7 — Prefer immutable data when possible
 
-Use immutable structures (records, value objects, `final` fields) when the data is never modified after creation. When exposing collections, return defensive copies or unmodifiable views. Replace setters with transformation methods that return new values.
+Data that does not change after creation should be impossible to change. Immutability removes an entire class of bugs where a value is modified somewhere unexpected.
 
-**Boundary or framework-mandated mutability is allowed**: some frameworks, serializers, ORMs, schema-generated models, or mapping tools require mutable structures. Keep that mutability at the boundary, and prefer immutable models inside the domain layer.
+**Make the type immutable at construction**
+- Use `record` (Java), `data class` (Kotlin), or `@Value` (Lombok) for data carriers
+- Mark fields `final` when records are not available
+- Reject invalid state in the constructor so the object is always valid from the moment it exists
+
+**Expose collections safely**
+- Never return a mutable internal collection directly — return a defensive copy or an unmodifiable view
+- Never accept a mutable collection parameter and store it directly — copy it at construction time
+
+```java
+// unsafe — caller can mutate the internal list
+public List<LineItem> getItems() { return items; }
+
+// safe — caller gets a read-only view
+public List<LineItem> getItems() { return Collections.unmodifiableList(items); }
+```
+
+**When mutability is unavoidable**
+Some frameworks, serializers, ORMs, or schema-generated models require mutable structures. Accept that mutability at the boundary and keep it there. The internal domain layer should still prefer immutable models.
 
 ---
 
-## Step 7 — Put invariants close to the data
+## Step 8 — Put invariants close to the data
 
 Validation rules belong on the type they protect. Use constructors, compact constructors, factory methods, or validation functions to reject invalid state at creation time.
 
@@ -191,7 +215,7 @@ If the type is generated or framework-owned, enforce invariants in the internal 
 
 ---
 
-## Step 8 — Use explicit categories for closed sets
+## Step 9 — Use explicit categories for closed sets
 
 When a value can only belong to a fixed set of known states or categories, represent that constraint explicitly instead of relying on free-form values.
 
@@ -223,14 +247,14 @@ Use explicit categories when the set of values is closed and meaningful to the d
 
 ---
 
-## Step 9 — Choose construction that explains itself
+## Step 10 — Choose construction that explains itself
 
 The way an object is built should reveal intent at the call site.
 
 - **simple constructor or initializer** — when there are only a few clear parameters
 - **named parameters / keyword arguments** — when the language supports passing arguments by name
 - **builder** — when there are many optional parameters or many values of the same basic type
-- **factory method** — when the construction has a meaningful domain name, such as `trialSubscriptionFor(user)` or `paidInvoiceFor(order, payment)`
+- **factory method** — when the type can be created in multiple meaningfully different ways, when construction represents a domain event, or when the name communicates a precondition the constructor cannot express. Examples: `Subscription.trial(user)` vs `Subscription.paid(user, plan)`, `Invoice.paid(order, payment)`
 - **explicit value types** — when same-typed values can be swapped or need units, rules, or identity
 
 ```java
@@ -249,46 +273,81 @@ PersonProfile profile = PersonProfile.builder()
 
 ---
 
-## Step 10 — Let the clearer data model simplify behavior
+## Step 11 — Move behavior onto the type
 
-After improving the data model, re-check the surrounding logic.
+After clarifying the data model, look for logic in the surrounding code that belongs on the type itself.
 
-Look for behavior that can now become simpler because the data is more explicit:
+Move logic onto the type when:
 
-- remove repeated interpretation of raw values
-- remove defensive checks made unnecessary by invariants
-- replace string comparisons with enums or sealed-type branches
-- replace argument-order comments with explicit types
-- simplify conditions that now have named domain concepts
+- a condition repeatedly inspects the internals of a type to answer a domain question — extract it as a method: `expiresAt != null && expiresAt.isBefore(now)` → `subscription.hasExpired()`
+- a calculation is always performed on a type's values — move it onto the type: `amount * quantity` repeated at call sites → `lineItem.totalAmount()`
+- a formatting or conversion is repeated at multiple call sites — move it: `"%s %s".formatted(first, last)` → `name.fullName()`
+- a validation is re-checked after construction — if the type already enforces it, delete the check; if it doesn't, move it to the constructor
 
-A clearer model should reduce the amount of interpretation needed in the behavior.
+Do not move behavior onto the type when:
+- it requires dependencies the type should not know about (repositories, services, external APIs)
+- it belongs to a public contract or generated model that cannot be changed
+- it is application logic that orchestrates multiple types rather than describing one concept
 
 ---
 
-## Step 11 — Refactoring order: smallest blast radius first
+## Step 12 — Let the clearer data model simplify behavior
+
+**Use idiomatic language features unlocked by the cleaner model**
+
+A clearer model often makes modern language constructs applicable where they weren't before. Look for opportunities to use:
+
+- **Pattern matching / sealed type branches** — when a raw String or int is replaced by a sealed hierarchy or enum, `switch` expressions with exhaustive case coverage become possible and safer
+- **Stream pipelines** — when a `List<Map<String, Object>>` becomes a `List<Order>`, filtering, mapping, and grouping become readable: `orders.stream().filter(Order::isPending).collect(...)`
+- **Optional or result types** — when a nullable raw value becomes an `Optional<CustomerId>` or a typed result, `map`, `flatMap`, and `orElse` replace nested null checks
+- **Destructuring / record deconstruction** — when a tuple or positional array becomes a named record, pattern matching can destructure it directly in a `switch` or `instanceof` check
+- **Collectors and groupingBy** — when flat maps with composite keys replace nested maps, `Collectors.groupingBy` with a key extractor becomes natural and readable
+
+Apply these only when they genuinely simplify the call site. Do not introduce streams or pattern matching where a simple loop or condition is already clear.
+
+Re-check the surrounding logic for interpretation code that is now redundant.
+
+Look for and remove:
+
+- **Defensive checks made unnecessary by invariants** — `if (age < 0)` guards scattered through the code that the `Age` constructor now rejects at creation time; delete them
+- **Null checks made unnecessary by construction** — `if (customerId == null)` checks that disappear when `CustomerId` is always constructed non-null and passed as a required parameter
+- **Range or format checks made unnecessary by the type** — `if (!email.contains("@"))` or `if (amount < 0)` conditions that the domain type already enforces in its constructor or factory method
+- **Argument-order comments made unnecessary by types** — inline comments like `// width, then height` or `// start, then end` that existed only because two parameters shared the same raw type; remove once each has a distinct type
+
+A clearer model should reduce the amount of interpretation needed in the behavior. If no simplification is possible, note that explicitly.
+
+---
+
+## Refactoring order: smallest blast radius first
 
 When refactoring existing code, apply changes from the smallest blast radius to the largest:
 
 1. Rename unclear data.
 2. Group values that already belong together.
 3. Wrap ambiguous primitives only when the new type earns its place.
-4. Flatten nested structures only when they hide meaning.
-5. Make data immutable when mutation is unnecessary.
-6. Move invariants close to the data.
-7. Replace raw categories with explicit ones.
+4. Replace raw categories with explicit ones.
+5. Put invariants close to the data.
+6. Make data immutable when mutation is unnecessary.
+7. Flatten nested structures only when they hide meaning.
 8. Reshape unclear construction.
 9. Simplify behavior around the clearer data model.
-10. Remove any abstraction that added ceremony without reducing confusion.
+10. Remove any type, carrier, or method introduced during refactoring that adds indirection without making the code easier to understand at its call sites.
 
 Each step must preserve behavior and keep the code compiling.
 
-**Audit checklist before finalizing:**
+## Before writing the output — audit checklist
+
+Before producing the final response, verify:
+
 - [ ] All primitive values with rules, units, identity, or ambiguity wrapped in domain types?
 - [ ] All vague names replaced with precise domain concepts?
 - [ ] All related values grouped into explicit carriers?
 - [ ] All positional tuples or arrays replaced with named records?
 - [ ] All nested DTOs/objects that hide intent reshaped?
 - [ ] If there are exceptions, are they explicitly justified in comments?
+- [ ] Logic that belongs on a type moved off the call site (Step 11)?
+- [ ] Idiomatic language features applied where the cleaner model unlocks them (Step 12)?
+- [ ] No public contract or persisted model silently modified — or concession explicitly noted in Trade-offs?
 
 ---
 
@@ -322,3 +381,57 @@ Trade-offs:
 If a section has nothing to report, keep the heading and write `- none`. This keeps responses comparable across refactors.
 
 ---
+
+## Canonical example
+
+**Input:**
+```java
+public class Order {
+    public String status;
+    public double amount;
+    public String customerId;
+    public String date;
+    public boolean flag;
+}
+```
+
+**Output:**
+
+```
+Signals found:
+- `status` is a raw String representing a closed set of states
+- `amount` is a raw double with no currency or unit
+- `customerId` is a raw String that could be swapped with other IDs
+- `date` is a raw String with no role or format enforced
+- `flag` is a boolean with no meaningful name
+
+Refactored code:
+record Order(
+  OrderStatus status,
+  Money amount,
+  CustomerId customerId,
+  OrderPlacedAt placedAt,
+  boolean isEligibleForDiscount
+) {}
+
+enum OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }
+record Money(BigDecimal amount, Currency currency) {}
+record CustomerId(UUID value) {}
+record OrderPlacedAt(LocalDateTime value) {}
+
+Data modeling choices:
+- OrderStatus replaces raw String; closes the set of valid states at the type level
+- Money wraps amount and currency together; prevents unit-free arithmetic
+- CustomerId wraps UUID; prevents swapping with other ID types at call sites
+- OrderPlacedAt names the role of the timestamp; removes ambiguity between creation, placement, and shipping dates
+- isEligibleForDiscount replaces `flag` with a yes/no question name
+
+Behavior simplifications:
+- switch branches on status can now use enum cases instead of string literals
+- currency checks downstream are removed; Money carries the currency
+- isEligibleForDiscount moved onto Order as a method; call sites no longer reconstruct the condition
+
+Trade-offs:
+- More types to maintain; justified because each type carries a rule or prevents a swap
+- No public-boundary concessions needed; this is an internal domain model
+```

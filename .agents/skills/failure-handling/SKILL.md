@@ -1,6 +1,6 @@
 ---
 name: failure-handling
-description: 'Review existing code to identify weaknesses in failure handling and propose safer, clearer, and more graceful alternatives without modifying the code directly.'
+description: Perform a failure handling review of existing code to identify weaknesses in error handling, exception strategy, logging, and boundary protection. Trigger on explicit requests for a failure handling review, error handling audit, or exception handling review. Do NOT trigger on general architecture reviews, code quality reviews, sustainability audits, or refactoring requests — use the architecture-review or sustainability skills for those.
 ---
 
 # Failure Handling Review Skill
@@ -34,7 +34,9 @@ Ask:
 - Does the code need to recover, retry, fall back, propagate, or fail fast?
 - Does the code expose technical details outside the layer where they belong?
 
-List operations that may fail. For each failure path, identify:
+List operations that may fail.
+Scope the failure map to the most significant paths. List up to five failure paths; if more exist, group minor or similar ones under a single entry with a note such as "three additional validation paths, all business logic errors with identical handling." This keeps the map readable without hiding meaningful risks.
+For each failure path, identify:
 
 - The operation that may fail.
 - The likely exception, error, or invalid result.
@@ -124,9 +126,12 @@ When uncertain, say so and explain what information is missing.
 ## 4. Execution flow
 
 Execution order:
-1. Detect triggered signals from section 2.
-2. Keep only the signals justified by section 3.
-3. Produce the final report exactly in section 6 format.
+1. Read the code and build the failure map (section 1).
+2. Scan for signals (section 2). Note every signal with its location.
+3. Filter signals through section 3. Drop or soften any that are justified by context.
+4. Review your own analysis (section 5) before writing the report.
+5. Produce the report in section 6 format, findings ordered by severity (high → low), then confidence (high → low).
+6. End with the no-automatic-changes confirmation.
 
 ## 5. Review your own analysis
 
@@ -171,26 +176,46 @@ Include:
 4. **No automatic changes**  
    End by confirming that no code was modified and that the result is a proposal for human review.
 
+## Finding Priority
+
+When multiple findings exist, order them as follows:
+1. Severity (high → low)
+2. Confidence (high → low)
+3. Estimated fix effort (smallest → largest)
+
 Canonical example:
 
 ```text
 1. Failure map
-- Success path: validate input -> persist user -> send notification.
-- Failure path: DB timeout during persist -> technical issue.
+- Success path: validate input → persist user → send welcome email.
+- Failure path 1: invalid email format on input → business logic error.
+- Failure path 2: DB timeout during persist → technical issue.
+- Failure path 3: SMTP server unreachable → technical issue.
+- Failure path 4: NullPointerException on missing config value → programming error.
 
 2. Findings (ordered by severity)
 - Severity: high
   - Location: UserService.saveUser
   - Signal: Flawed handling strategy
   - Failure classification: technical issue
-  - Why: timeout is translated without operation context
-  - Risk: poor triage and delayed incident response
-  - Handling recommendation: translate with operation-specific error code
+  - Why: DB timeout is caught and silently swallowed; caller receives a success response
+  - Risk: data loss goes undetected; no alert, no retry, no rollback signal
+  - Handling recommendation: catch the timeout explicitly, log with operation context and correlation ID, and rethrow as a typed service exception so the controller can return a 503 and trigger an alert
+  - Confidence: high
+
+- Severity: medium
+  - Location: NotificationService.sendWelcomeEmail
+  - Signal: Logging problem
+  - Failure classification: technical issue
+  - Why: failure is logged at DEBUG level with only "email failed"
+  - Risk: SMTP outages go unnoticed in production; no context for triage
+  - Handling recommendation: log at WARN with recipient domain (not full address), SMTP error code, and a retry hint; do not log the full email address
   - Confidence: medium
-  - Assumptions/unknowns: assumes no global structured error mapper
+  - Assumptions/unknowns: assumes no global SMTP failure monitor is already in place
 
 3. Human-review notes
-- Confirm whether a global handler already enforces one-log-per-failure.
+- Confirm whether a global exception handler already enforces one-log-per-failure before adding per-service logging.
+- Decide whether a failed welcome email should block user creation or be queued for async retry.
 
 4. No automatic changes
 - No code modified; proposal only.

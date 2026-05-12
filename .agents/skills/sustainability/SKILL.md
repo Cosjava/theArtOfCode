@@ -1,6 +1,6 @@
 ---
 name: sustainability
-description: Review software efficiency using chapter 8 sustainability patterns (Lean Packaging, Lean Storage, Lean Communication, Efficient Execution, Memory Efficiency). Use when asked to assess dependency bloat, storage growth, avoidable network traffic, CPU inefficiency, or memory retention and provide recommendations without modifying code.
+description: Perform a green software / sustainability audit of code or architecture using five patterns from Chapter 8 (Lean Packaging, Lean Storage, Lean Communication, Efficient Execution, Memory Efficiency). Trigger on explicit requests for a sustainability audit, green review, or efficiency audit. Do NOT trigger on general architecture reviews, code quality reviews, or refactoring requests — use the architecture-review skill for those.
 ---
 
 # Sustainability Patterns
@@ -47,8 +47,12 @@ Suggested tools:
 - Maven dependency plugin (for Java applications).
 - DepClean (for Java applications).
 - `jdeps` (for Java applications).
-- Webpack tree shaking.
+- Webpack tree shaking (for JavaScript/TypeScript applications).
 - Visual Studio "Remove Unused References" (.NET).
+- `depcheck` or `knip` (for Node.js projects).
+- `pip-audit` / `pipdeptree` (for Python projects).
+- `cargo udeps` (for Rust projects).
+- For other ecosystems, apply the equivalent dependency analysis tool for your package manager and flag any package whose removal would not break the build or test suite.
 
 ## Lean Storage checks
 
@@ -134,3 +138,23 @@ For each finding, include:
 - Assumptions (required if confidence is medium/low)
 
 When no meaningful issue exists, explicitly say no optimization is recommended and explain why.
+
+## Finding Priority
+
+When multiple findings exist, order them as follows:
+1. Severity (high → low)
+2. Confidence (high → low)
+3. Estimated fix effort (smallest → largest)
+
+State the ordering rationale briefly at the top of the findings section so the reader understands why item 1 appears first.
+
+## Example Finding
+
+- **Pattern:** Lean Communication
+- **Issue:** Product listing page makes one HTTP call per item to fetch its thumbnail URL, resulting in N+1 requests on page load.
+- **Wasted resource(s):** Network bandwidth, server CPU, client battery.
+- **Why it matters in production:** A page with 50 items generates 51 requests. At moderate traffic this creates unnecessary server load and degrades mobile performance.
+- **Smallest safe improvement:** Batch thumbnail URLs into the existing product list endpoint response so one call returns all data needed for the page.
+- **Trade-off:** Slightly larger initial payload; eliminates 50 round trips per page load.
+- **Severity:** High
+- **Confidence:** High
