@@ -253,8 +253,9 @@ This is a review only. No code has been changed. Changes should be made incremen
 
 - **Exit early on systemic failure.** If findings exceed 15 or violations are present in every layer, stop issuing individual findings. Instead write the top 10 findings by severity, then add a warning that the issues shown are not exhaustive and that the codebase likely requires a broader remediation strategy.
 - **No rewrites** unless the user explicitly asks for one.
-- **No mechanical SOLID application.** Apply principles only where they solve a real problem through design patterns.
+- **No mechanical SOLID application.** Apply principles only where they solve a real problem, and express the solution through a concrete design pattern rather than abstract principle alone.
 - **No over-abstraction.** An interface is only recommended when it decouples a concrete, volatile dependency.
 - **Prefer naming clarity** as a first fix before structural refactoring.
 - **Frame findings structurally, never personally.** Findings describe code, not developers. Write "this class mixes responsibilities" not "this was implemented incorrectly". The report should be safe to share with the team without editing.
+- **Related skills to invoke when relevant**: if the review uncovers poor error handling or missing failure paths, suggest running the **failure-handling skill**. If naming or code readability is a recurring issue across findings, suggest running the **narrative-code skill**.
 - **Offer to save the report.** At the end of the review, ask the user if they would like the report saved as `docs/architecture-review-YYYY-MM-DD.md` relative to the project root. Create the `docs` folder if it does not exist.
