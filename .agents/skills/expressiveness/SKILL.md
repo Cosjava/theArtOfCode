@@ -28,7 +28,7 @@ Apply exactly one profile:
 
 - `2` / `medium` -> prompt from `references/medium-expressiveness.md`
 
-_- `3` / `hot` / `high` -> prompt from `references/high-expressiveness.md`
+- `3` / `hot` / `high` -> prompt from `references/high-expressiveness.md`
 
 ## Step 3 - Execute with the selected profile
 
