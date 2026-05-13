@@ -25,19 +25,10 @@ Accept `1`, `2`, `3`, or the words `low`, `medium`, `hot` (and `high` as equival
 Apply exactly one profile:
 
 - `1` / `low` -> prompt from `references/low-expressiveness.md`
-  - Use a conservative, idiomatic style.
-  - Prioritize explicit constructs over expressiveness or conciseness.
-  - Avoid advanced language features, clever one-liners, or dense chains unless they are clearly simpler than the traditional alternative.
 
 - `2` / `medium` -> prompt from `references/medium-expressiveness.md`
-  - Use expressive language features when they make the code clearer, safer, or closer to the domain.
-  - Prefer widely understood constructs over advanced ones.
-  - Do not use a modern feature only because it is shorter; choose it only when it improves readability.
 
-- `3` / `hot` / `high` -> prompt from `references/high-expressiveness.md`
-  - Use the most expressive idioms available in the target language.
-  - Prefer modern constructs such as pattern matching, switch expressions, records, data classes, sealed types, pipelines, or named constructors when they improve readability, safety, or closeness to the problem.
-  - Keep the code idiomatic and avoid cleverness for its own sake.
+_- `3` / `hot` / `high` -> prompt from `references/high-expressiveness.md`
 
 ## Step 3 - Execute with the selected profile
 
