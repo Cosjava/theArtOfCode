@@ -17,7 +17,22 @@ violations of **design principles** (SOLID, DRY, SRP, etc.), and misapplied or m
  
 ---
 
-## Phase 0 — Codebase Exploration Before Any Questions
+## Phase 0 — Complexity Triage
+
+Before any exploration, classify the scope:
+
+| Tier | Description | Review depth |
+|---|---|---|
+| **Tiny** | Single file or < 200 LOC | Skip interview, 1–3 findings max, no full report |
+| **Module** | A package or feature slice | Max 2 interview questions, condensed report |
+| **System** | Multiple services or layers | Full skill protocol |
+
+State the detected tier at the start of your response. Adjust finding count,
+interview length, and report sections to match.
+
+---
+
+## Phase 1 — Codebase Exploration Before Any Questions
 
 **Before asking the user anything**, fully explore what is already knowable from the code:
 
@@ -28,13 +43,16 @@ violations of **design principles** (SOLID, DRY, SRP, etc.), and misapplied or m
 5. Infer responsibility from class/method names, file groupings, and existing comments.
 6. Detect any applied design patterns (Repository, Factory, Strategy, Observer, Facade, etc.).
 7. Identify SOLID violations that are already visible (e.g. god classes, mixed layers, concrete dependencies).
-   **Only ask the user about things you genuinely cannot infer.** When you do ask, follow the
-   interview protocol below.
+8. Check for the presence and coverage of tests. Note untested modules explicitly — they constrain which recommendations are safe to make.
+9. If git history is accessible, check commit frequency on high-coupling classes. Coupling risk is proportional to change rate — a stable untouched class with high coupling is low priority; the same class touched every sprint is urgent.
+10. Note any TODO comments, issue markers (`// FIXME`, `// HACK`), or documentation that indicates known pain points or expected future changes.
 
 ---
 
-## Phase 1 — Targeted Interview Protocol
+## Phase 2 — Targeted Interview Protocol
 
+**Only ask the user about things you genuinely cannot infer.** When you do ask, follow the
+interview protocol below.
 Ask one question at a time. For each question:
 
 - **Why it matters**: one sentence on how the answer affects the cohesion/coupling verdict.
@@ -55,7 +73,7 @@ Typical remaining questions:
  
 ---
 
-## Phase 2 — Architecture Characterisation
+## Phase 3 — Architecture Characterisation
 
 Before issuing findings, produce a short architecture summary:
 
@@ -68,25 +86,34 @@ Before issuing findings, produce a short architecture summary:
 - **Primary cohesion risk areas**: modules or classes with unclear responsibility
 - **Primary coupling risk areas**: direct cross-layer or cross-concern dependencies
 ```
- 
+
+If the user requests diagrams, or if the dependency structure is complex enough that a diagram
+would materially aid understanding, produce Mermaid diagrams at this phase:
+
+- **Dependency graph**: `graph TD` showing layer and module dependencies, highlighting
+  problematic edges in red with `style NodeName fill:#f66`
+- **Coupling hotspots**: nodes with high fan-in or fan-out visually distinguished
+- **Sequence diagram**: `sequenceDiagram` for key flows if layer leakage is detected
+
+Only produce diagrams that add information not already clear from the summary text.
+
 ---
 
-## Phase 3 — Cohesion Review
+## Phase 4 — Cohesion Review
 
 Look for these signals, ranked by severity:
 
-| Signal | What to look for |
-|---|---|
-| **SRP violation** | Classes or modules that mix unrelated responsibilities |
-| **Conceptual mismatch** | Methods in the same class that belong to different business concepts |
-| **God/Manager class** | Utility or manager classes that collect unrelated behavior |
-| **Field isolation** | Fields used by only a subset of methods |
-| **Divergent change** | Methods that change for different, unrelated reasons |
-| **Unclearable name** | Code that is hard to name clearly because it does too many things |
+| Signal | What to look for | Why it indicates low cohesion |
+|---|---|---|
+| **Responsibility scatter** | Methods that touch unrelated domain concepts (e.g. `UserService` handling emails *and* billing) | The class serves multiple masters |
+| **Field isolation** | Fields used by only one or two methods, ignored by the rest | The class is really 2+ classes glued together |
+| **Mixed abstraction levels** | Some methods are high-level orchestration, others are low-level implementation detail | No single stable reason to exist |
+| **Import breadth** | The class imports from many unrelated modules or layers | Cohesion usually correlates with a narrow import surface |
+| **Test setup complexity** | Requires many unrelated mocks or fixtures to test a single method | The unit is not actually a unit |
  
 ---
 
-## Phase 4 — Coupling Review
+## Phase 5 — Coupling Review
 
 Look for these signals:
 
@@ -100,10 +127,11 @@ Look for these signals:
 | **Greedy constructors** | Constructors or methods with many collaborators |
 | **Concrete coupling** | Direct `new` instantiation of volatile dependencies instead of injection |
 | **Missing abstraction** | No interface or port between domain and infrastructure when one is warranted |
- 
+| **High fan-in** | A coupled module is called from many places — coupling risk scales with the number of callers, not just the coupling itself |
+
 ---
 
-## Phase 5 — Design Patterns & Principles Assessment
+## Phase 6 — Design Patterns & Principles Assessment
 
 For each relevant principle or pattern, state: *applied correctly / partially / violated / missing but warranted*.
 
@@ -142,7 +170,7 @@ Check for patterns that are present (correctly or incorrectly applied) and patte
  
 ---
 
-## Phase 6 — Finding Format
+## Phase 7 — Finding Format
 
 For each finding, output a structured block:
 
@@ -156,6 +184,7 @@ For each finding, output a structured block:
 - **Why it harms durability**: concrete consequence (e.g. "adding a new persistence store requires changes in the domain layer")
 - **Smallest safe improvement**: the minimal change that improves the situation
 - **Trade-off**: what is lost in simplicity or readability if the fix is applied
+- **Test safety**: safe to change (tests exist) | risky (no tests) | unknown
 - **Severity**: high | medium | low
 - **Confidence**: high | medium | low
 - **Assumptions** *(if confidence < high)*: what you assumed and why
@@ -163,9 +192,12 @@ For each finding, output a structured block:
  
 ---
 
-## Phase 7 — Architecture Report
+## Phase 8 — Architecture Report
 
-After all findings, produce a full report using this template:
+After all findings, produce a report using only the sections that have substance.
+Omit any section where the honest content would be "N/A" or "none identified".
+For Tiny-tier reviews, replace the full report with a single findings summary table
+plus one short recommendations paragraph.
 
 ```markdown
 # Architecture Review Report
@@ -219,10 +251,10 @@ This is a review only. No code has been changed. Changes should be made incremen
 
 ## Behaviour Rules
 
+- **Exit early on systemic failure.** If findings exceed 15 or violations are present in every layer, stop issuing individual findings. Instead write the top 10 findings by severity, then add a warning that the issues shown are not exhaustive and that the codebase likely requires a broader remediation strategy.
 - **No rewrites** unless the user explicitly asks for one.
-- **No mechanical SOLID application.** Apply principles only where they solve a real problem.
+- **No mechanical SOLID application.** Apply principles only where they solve a real problem through design patterns.
 - **No over-abstraction.** An interface is only recommended when it decouples a concrete, volatile dependency.
 - **Prefer naming clarity** as a first fix before structural refactoring.
-- **One question at a time** during the interview phase.
-- **Self-answer first**: inspect the codebase before asking the user.
-- Confidence must be declared honestly. If an assumption is made, state it.
+- **Frame findings structurally, never personally.** Findings describe code, not developers. Write "this class mixes responsibilities" not "this was implemented incorrectly". The report should be safe to share with the team without editing.
+- **Offer to save the report.** At the end of the review, ask the user if they would like the report saved as `docs/architecture-review-YYYY-MM-DD.md` relative to the project root. Create the `docs` folder if it does not exist.

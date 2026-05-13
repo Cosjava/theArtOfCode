@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(//c/Users/sandr/.claude/**)",
-      "Read(//c/Users/sandr/AppData/Roaming/**)"
-    ]
-  }
-}

@@ -1,6 +1,6 @@
 ---
 name: narrative-code
-description: Refactor or generate code using Narrative Code principles. Use when code has long methods, mixed abstraction levels, unclear orchestration, or vague naming, and you need plot-driven structure (Action, Scene, Chapter, Table of contents) plus a narrative call graph.
+description: Refactor or generate code using Narrative Code principles from The Art of Code, Chapter 2. Trigger on explicit requests for a narrative code refactor, story-driven refactor, or narrative structure review. Do NOT trigger on general code quality reviews, clarity of intent refactors, failure handling reviews, or sustainability audits — use the clarity-of-intent, failure-handling, or sustainability skills for those.
 ---
 
 # Narrative Code Generator
@@ -19,7 +19,9 @@ Before writing a single line, determine which plot this code belongs to:
 - **Cleaning** - removing expired or useless data (purging old records, clearing temp files)
 - **Defense** - guarding integrity (input validation, authentication, authorization, encryption)
 - **Archiving** - storing, retrieving, updating, or deleting data (CRUD, document stores)
-- **Transformation** - refining raw data into useful form, such as enrichment, filtering, aggregation, formatting, normalization, or deriving new values. If the data is merely cleaned or adapted before storage, treat the main plot as **Archiving**.
+- **Transformation** - refining raw data into useful form, such as enrichment, filtering, aggregation, formatting, normalization, or deriving new values. 
+
+> **Transformation vs Archiving boundary:** if the data is reshaped only to fit a storage format (renaming fields, casting types, flattening a DTO), the main plot is **Archiving** — the transformation is incidental. Use **Transformation** only when deriving new meaning: aggregating totals, enriching with external data, filtering by business rules, or producing a new representation that did not exist in the input. Example: mapping a `UserDTO` to a `UserEntity` before saving → **Archiving**. Computing a customer's lifetime value from a list of orders → **Transformation**.
 
 ---
 
@@ -99,27 +101,29 @@ Variables are the characters of the story. Apply these rules:
 
 ## Step 4 - Review and Mandatory Audit (must pass before output)
 
-Before finalizing, review the generated or refactored code against the narrative rules and run this audit:
+Before finalizing, run both parts of this audit. If any item fails, rewrite and rerun before producing output.
+
+### Part A — Narrative review (requires judgment)
 
 - Does every extracted method earn its place?
 - Did any method exist only to satisfy a narrative level?
 - Are there wrapper methods that merely group already clear calls?
 - Is each caller still readable with the fewest useful levels of indirection?
 - Do method names reveal exact intent at the call site?
-- Are chunks at a consistent level of abstraction?
+- Are chunks at a consistent level of abstraction within each method?
 - Would inlining a method make the story clearer?
 - Is duplicated code small enough that extracting it would make the story worse?
-- Chunk count per method is within its narrative level budget.
-- Each method has an explicit concern tag (`Defense`, `Archiving`, etc.) in the audit notes.
-- No forbidden call edge exists (for example `Scene -> Scene`).
-- No one-line wrapper exists unless it provides one of:
-    - reuse in **3 or more** call sites,
-    - encapsulation of non-trivial complexity that is clearer behind a domain-specific name.
-- The high-level caller remains within budget after extraction, and still reads clearly if trivial wrappers are inlined.
 
-If a rule is technically satisfied but the code reads worse, revise the code. Prefer the clearest story with the least indirection over strict hierarchy compliance.
+### Part B — Mechanical checks (verifiable without judgment)
 
-If any audit item fails, rewrite and rerun this step before final output.
+- [ ] Chunk count per method is within its narrative level budget (Action ≤ 3, Scene ≤ 6, Chapter ≤ 8, Table of contents ≤ 8)
+- [ ] Each method calls at least the minimum required level (Scene calls at least one Action, Chapter calls at least one Scene, Table of contents calls at least one Chapter)
+- [ ] No forbidden call edge exists (Scene → Scene, Action → Scene, Action → Chapter, etc.)
+- [ ] No one-line wrapper exists unless it provides reuse in 3 or more call sites, or encapsulates non-trivial complexity behind a domain-specific name
+- [ ] Methods appear top-to-bottom: Table of contents → Chapters → Scenes → Actions
+- [ ] Every method name combines a verb and a subject with precise scope
+
+**Hard stop:** if any mechanical check fails, rewrite before proceeding to output.
 
 ---
 
@@ -160,5 +164,103 @@ Table of contents: handleUserRegistration (Defense + Archiving + Delivering)
 |   `-- Scene: savePendingUser (Archiving)
 |       `-- Action: insertUser
 `-- Chapter: sendConfirmationEmail (Delivering)
+    `-- Action: sendEmail
+```
+## Canonical example
+
+**Input:** A method that validates a user registration form, saves the user, and sends a confirmation email — all inline in one method.
+
+**Output:**
+
+```text
+Plot: Defense + Archiving + Delivering
+Description: Validates a new user registration, persists the pending account, and sends a confirmation email.
+
+Code:
+// Table of contents
+void handleUserRegistration(UserRegistrationRequest request) {
+    User pendingUser = createPendingUser(request);
+    sendConfirmationEmail(pendingUser);
+}
+
+// Chapter (Defense + Archiving)
+User createPendingUser(UserRegistrationRequest request) {
+    validateUserRegistration(request);
+    return savePendingUser(request);
+}
+
+// Scene (Defense)
+void validateUserRegistration(UserRegistrationRequest request) {
+    validateMandatoryField(request.firstName(), "firstName");
+    validateMandatoryField(request.lastName(), "lastName");
+    validateBirthDate(request.birthDate());
+    validateEmail(request.email());
+}
+
+// Scene (Archiving)
+User savePendingUser(UserRegistrationRequest request) {
+    User user = buildPendingUser(request);
+    return insertUser(user);
+}
+
+// Chapter (Delivering)
+void sendConfirmationEmail(User user) {
+    sendEmail(user.email(), buildConfirmationMessage(user));
+}
+
+// Action
+void validateMandatoryField(String value, String fieldName) {
+    if (value == null || value.isBlank()) {
+        throw new ValidationException(fieldName + " is required.");
+    }
+}
+
+// Action
+void validateBirthDate(LocalDate birthDate) {
+    if (birthDate == null || birthDate.isAfter(LocalDate.now())) {
+        throw new ValidationException("Birth date must be in the past.");
+    }
+}
+
+// Action
+void validateEmail(String email) {
+    if (!email.contains("@")) {
+        throw new ValidationException("Email format is invalid.");
+    }
+}
+
+// Action
+User buildPendingUser(UserRegistrationRequest request) {
+    return new User(request.firstName(), request.lastName(),
+                    request.email(), UserStatus.PENDING);
+}
+
+// Action
+User insertUser(User user) {
+    return userRepository.save(user);
+}
+
+// Action
+void sendEmail(String recipient, String message) {
+    emailClient.send(recipient, message);
+}
+
+// Action
+String buildConfirmationMessage(User user) {
+    return "Welcome %s, please confirm your email.".formatted(user.firstName());
+}
+
+Narrative structure:
+Table of contents: handleUserRegistration (Defense + Archiving + Delivering)
+|-- Chapter: createPendingUser (Defense + Archiving)
+|   |-- Scene: validateUserRegistration (Defense)
+|   |   |-- Action: validateMandatoryField
+|   |   |-- Action: validateBirthDate
+|   |   `-- Action: validateEmail
+|   `-- Scene: savePendingUser (Archiving)
+|       |-- Action: buildPendingUser
+|       `-- Action: insertUser
+`-- Chapter: sendConfirmationEmail (Delivering)
+    |-- Action: buildConfirmationMessage
     `-- Action: sendEmail
 ```
