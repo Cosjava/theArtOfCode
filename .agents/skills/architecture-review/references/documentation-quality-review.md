@@ -39,6 +39,8 @@ If this lens does not apply to the scope, state:
 ```markdown
 # Documentation Quality Review
 
+Short section summary (2 to 4 sentences): what documentation surfaces were inspected, where gaps are concentrated, and overall documentation posture.
+
 ## Findings
 | # | Doc / File | Gap | Observable evidence | Impact | Severity | Confidence |
 |---|---|---|---|---|---|---|
@@ -48,12 +50,14 @@ If this lens does not apply to the scope, state:
 2. ...
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example Output (partial)
 
 ```markdown
 # Documentation Quality Review
+
+Main documentation summary: setup and operational documentation gaps are concentrated in missing core artifacts and stale/incomplete usage guidance.
 
 ## Findings
 | # | Doc / File | Gap | Observable evidence | Impact | Severity | Confidence |

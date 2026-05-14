@@ -84,10 +84,8 @@ Before asking the user anything, inspect what is already knowable:
 8. Identify layer boundaries (presentation, application, domain, infrastructure).
 9. Detect framework, runtime, persistence, and transport choices.
 10. Infer responsibility from names and grouping.
-11. Detect design patterns already in use.
-12. Identify obvious SOLID violations.
-13. Check tests and coverage shape; call out untested modules.
-14. Note TODO, FIXME, HACK, and existing pain-point comments.
+11. Check tests and coverage shape; call out untested modules.
+12. Note TODO, FIXME, HACK, and existing pain-point comments.
 
 ## Section 3 - Targeted Interview Protocol
 
@@ -142,7 +140,6 @@ Use this format:
 - Total files in scope: Y
 - Approximate LOC reviewed: Z
 - Test surface observed: unit | integration | e2e | none | mixed
-- Git history summary: include only when scope includes `1` or `8`
 - Notes: any constraints or relevant scope caveats
 ```
 
@@ -161,10 +158,6 @@ Git history output is scope-driven:
 - If git history is unavailable when needed, emit `Git history signals: unavailable in current environment.` and state the reason briefly.
 - Keep git-based conclusions evidence-based; avoid speculative ownership claims.
 
-Security lookup output is scope-driven:
-- If scope includes `1` or `5`, follow the CVE/OWASP lookup rules in `references/security-review.md`.
-- For scope `1` or `5`, include explicit CVE/advisory evidence in the Cybersecurity section (or explicit skip reason if declined/unavailable).
-
 ## Section 6 - Output Templates by Scope
 
 Do not collapse all scopes into one generic narrative template.
@@ -182,16 +175,26 @@ Use the output format in the selected reference:
 
 If multiple options are selected and `1` is included, expand to full set (`2..8`).
 If multiple options are selected without `1`, emit each selected output as its own top-level section in the same response.
+In each selected scope section, immediately after the section title (`# ... Review`), add a short summary paragraph (2 to 4 sentences) that explains:
+- what was inspected for that section,
+- where risk or quality signals are concentrated,
+- and the overall posture for that section.
+Keep this summary section-specific; do not repeat the global architecture header/context from Section 4.
 Within each selected scope section, keep findings ordered by severity.
 Include file and line references when possible across all findings and hotspot tables.
+
 After all selected scope sections, emit a required `## Conclusion` section:
   - Top 3 cross-scope risks
   - Recommended execution order for mitigations
   - Confidence limits / missing evidence
   - Scope constraints (what was not assessed)
 
+If scope includes `1` or `5`, after `## Conclusion`, emit a required `## External Security References Used` section:
+- If lookup was performed: list deduplicated external URLs actually accessed.
+- If lookup was declined/unavailable: state that clearly and include manual verification links (`https://nvd.nist.gov`, `https://owasp.org/Top10`).
+
 - Keep out-of-scope notes explicit:
   - Error-handling depth not covered: suggest `failure-handling` skill.
   - Readability narrative style not covered: suggest `narrative-code` skill.
 
-- End the review response by asking whether to save the report as `docs/architecture-review-YYYY-MM-DD.md`.
+End the review response by asking whether to save the report as `docs/architecture-review-YYYY-MM-DD.md`.

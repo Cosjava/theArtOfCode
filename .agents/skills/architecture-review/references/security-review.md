@@ -24,6 +24,8 @@ Rules:
 - If confirmed: fetch https://owasp.org/Top10 before issuing any findings and use
   the live categories retrieved — do not rely on training data for OWASP mappings
   as the Top 10 is updated periodically.
+- If confirmed: keep a deduplicated list of every external security URL actually
+  accessed so it can be emitted later in `## External Security References Used`.
 - If declined or unavailable: state `CVE lookup skipped — verify manually at
   https://nvd.nist.gov and https://owasp.org/Top10` and proceed without CVE data.
 - If declined or unavailable: fall back to the cached categories below and note
@@ -65,6 +67,8 @@ If this lens does not apply to the scope, state:
 ```markdown
 # Cybersecurity Failure Review
 
+Short section summary (2 to 4 sentences): what was inspected for architecture-level security, where threat exposure concentrates, and overall security posture.
+
 ## Threat Findings
 | # | Entry Point | Missing Control | Impacted Asset | CIA Impact | OWASP | Severity | Confidence |
 |---|---|---|---|---|---|---|---|
@@ -79,14 +83,18 @@ If this lens does not apply to the scope, state:
 ## Prioritized Mitigations
 1. ...
 2. ...
+
+_External references are emitted once in the final report section `## External Security References Used`._
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example Output (partial)
 
 ```markdown
 # Cybersecurity Failure Review
+
+Main security summary: threat exposure is concentrated in boundary handling and exception/logging behavior, with dependency CVEs called out explicitly when confirmed.
 
 ## Threat Findings
 | # | Entry Point | Missing Control | Impacted Asset | CIA Impact | OWASP | Severity | Confidence |
@@ -108,4 +116,6 @@ Section rule: keep this section findings-first. Do not add `Executive Summary` o
 1. Add an input validation boundary (schema validation) at the controller layer before any repository call.
 2. Move JWT secret to environment variable and enforce its presence at startup.
 3. Replace `CORS *` with an explicit allowlist in `app.js`.
+
+_External references are emitted once in the final report section `## External Security References Used`._
 ```

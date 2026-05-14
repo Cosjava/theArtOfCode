@@ -30,6 +30,8 @@ If no high-coupling signals are found, state:
 ```markdown
 # Coupling Review
 
+Short section summary (2 to 4 sentences): what was inspected for coupling, where dependency risks are concentrated, and overall coupling posture.
+
 ## Findings
 | # | From | To | Issue | Observable evidence | Severity | Confidence |
 |---|---|---|---|---|---|---|
@@ -43,12 +45,14 @@ If no high-coupling signals are found, state:
 2. ...
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example Output (partial)
 
 ```markdown
 # Coupling Review
+
+Main coupling summary: boundary leakage is concentrated in service classes that depend directly on infrastructure and transport details.
 
 ## Findings
 | # | From | To | Issue | Observable evidence | Severity | Confidence |

@@ -26,6 +26,8 @@ If no low-cohesion signals are found, state:
 ```markdown
 # Cohesion Review
 
+Short section summary (2 to 4 sentences): what was inspected for cohesion, where low-cohesion risks are concentrated, and overall cohesion posture.
+
 ## Findings
 | # | Location | Issue | Observable evidence | Severity | Confidence |
 |---|---|---|---|---|---|
@@ -39,12 +41,14 @@ If no low-cohesion signals are found, state:
 2. ...
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example
 
 ```markdown
 # Cohesion Review
+
+Main cohesion summary: `OrderService` is the primary cohesion hotspot due to mixed responsibilities and isolated fields.
 
 ## Findings
 | # | Location | Issue | Observable evidence | Severity | Confidence |

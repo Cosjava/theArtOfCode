@@ -51,6 +51,8 @@ If this lens does not apply to the scope, state:
 ```markdown
 # Git History Signals Review
 
+Short section summary (2 to 4 sentences): what git signals were inspected, where volatility/durability risks concentrate, and overall history-risk posture.
+
 ## Data Availability
 - Git history: available | unavailable
 - Recent window: N days (default 90)
@@ -81,14 +83,15 @@ If this lens does not apply to the scope, state:
 2. ...
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example Output (partial)
 
 ```markdown
 # Git History Signals Review
 
-## Data Availability
+Main git-history summary: risk is concentrated where high churn, large file size, and low test surface overlap.
+
 - Git history: available
 - Recent window: 90 days
 - Churn metric used: line churn (added + deleted lines)

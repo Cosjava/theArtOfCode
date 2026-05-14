@@ -66,6 +66,8 @@ If this lens does not apply to the scope, state:
 ```markdown
 # Design Principles and Patterns Review
 
+Short section summary (2 to 4 sentences): what was inspected for principles/patterns, where violations or drift concentrate, and overall design posture.
+
 ## SOLID and Principle Status
 | Principle | Status | Observable evidence | Severity |
 |---|---|---|---|
@@ -83,12 +85,14 @@ If this lens does not apply to the scope, state:
 2. ...
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example Output (partial)
 
 ```markdown
 # Design Principles and Patterns Review
+
+Main design summary: Strategy and sealed-type patterns are applied well, while Dependency Inversion and extension pressure remain concentrated in service hotspots.
 
 ## SOLID and Principle Status
 | Principle | Status | Observable evidence | Severity |

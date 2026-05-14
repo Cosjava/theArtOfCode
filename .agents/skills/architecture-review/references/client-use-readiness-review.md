@@ -26,6 +26,8 @@ If this lens does not apply to the scope, state:
 ```markdown
 # Client-Use Readiness Review
 
+Short section summary (2 to 4 sentences): what was inspected for adoption/operations, where user or operator friction concentrates, and overall readiness posture.
+
 ## Findings
 | # | Area | Issue | Observable evidence | User/Operator Impact | Severity | Confidence |
 |---|---|---|---|---|---|---|
@@ -35,11 +37,13 @@ If this lens does not apply to the scope, state:
 2. ...
 ```
 
-Section rule: keep this section findings-first. Do not add `Executive Summary` or repeated architecture context.
+Section rule: immediately after the section title, add a short section summary paragraph (2 to 4 sentences). Do not add `Executive Summary` or repeated architecture context.
 
 ## Example
 ```markdown
 # Client-Use Readiness Review
+
+Main readiness summary: onboarding and operational clarity are the dominant adoption risks for this scope.
 
 ## Findings
 | # | Area | Issue | Observable evidence | User/Operator Impact | Severity | Confidence |
