@@ -183,7 +183,7 @@ When multiple findings exist, order them as follows:
 2. Confidence (high → low)
 3. Estimated fix effort (smallest → largest)
 
-Canonical example:
+Example:
 
 ```text
 1. Failure map

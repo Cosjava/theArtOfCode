@@ -382,7 +382,7 @@ If a section has nothing to report, keep the heading and write `- none`. This ke
 
 ---
 
-## Canonical example
+## Example
 
 **Input:**
 ```java

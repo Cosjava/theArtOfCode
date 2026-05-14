@@ -148,8 +148,9 @@ When multiple findings exist, order them as follows:
 
 State the ordering rationale briefly at the top of the findings section so the reader understands why item 1 appears first.
 
-## Example Finding
+## Example
 
+```markdown
 - **Pattern:** Lean Communication
 - **Issue:** Product listing page makes one HTTP call per item to fetch its thumbnail URL, resulting in N+1 requests on page load.
 - **Wasted resource(s):** Network bandwidth, server CPU, client battery.
@@ -158,3 +159,4 @@ State the ordering rationale briefly at the top of the findings section so the r
 - **Trade-off:** Slightly larger initial payload; eliminates 50 round trips per page load.
 - **Severity:** High
 - **Confidence:** High
+```
