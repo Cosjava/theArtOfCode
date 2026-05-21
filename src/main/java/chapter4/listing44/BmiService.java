@@ -83,10 +83,10 @@ public class BmiService {
     HeightInInches height
   ) {
     double bmi = (weight.value() / (height.value() * height.value())) * 703;
-    return switch (bmi) {
-      case double v when v < 18.5 -> BmiCategory.UNDERWEIGHT;
-      case double v when v < 25.0 -> BmiCategory.NORMAL;
-      case double v when v < 30.0 -> BmiCategory.OVERWEIGHT;
+    return switch (Double.valueOf(bmi)) {
+      case Double v when v < 18.5 -> BmiCategory.UNDERWEIGHT;
+      case Double v when v < 25.0 -> BmiCategory.NORMAL;
+      case Double v when v < 30.0 -> BmiCategory.OVERWEIGHT;
       default -> BmiCategory.OBESE;
     };
   }
