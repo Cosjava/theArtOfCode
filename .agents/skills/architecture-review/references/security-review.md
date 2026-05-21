@@ -92,7 +92,7 @@ Section rule: immediately after the section title, add a short section summary p
 ## Example Output (partial)
 
 ```markdown
-# Cybersecurity Failure Review
+# Security Review
 
 Main security summary: threat exposure is concentrated in boundary handling and exception/logging behavior, with dependency CVEs called out explicitly when confirmed.
 

@@ -28,8 +28,8 @@ Choose review scope (reply with numbers, separated by comma or space):
 2. Cohesion only
 3. Coupling only
 4. Design principles and patterns only
-5. Cybersecurity failure review only
-6. Client-use readiness only (usability plus documentation)
+5. Security only
+6. Client-use readiness only
 7. Documentation quality only
 8. Git history signals only
 
@@ -131,7 +131,7 @@ Use this format:
 **Scope selected**: ...
 **Scope Level**: Tiny | Module | System
 
-## Architecture overview
+## Overview
 - Architecture type: layered | hexagonal | modular monolith | microservice | event-driven | hybrid
 - Layer style and dependency direction: ...
 - System type: frontend | backend | full-stack | library | mixed
