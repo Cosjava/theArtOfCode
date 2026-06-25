@@ -36,7 +36,7 @@ public class BmiService {
       ));
     Integer ageWithMostObese = countByAgeAndBmi.entrySet().stream()
       .filter(e -> e.getValue().containsKey(BmiCategory.OBESE))
-      .max(Comparator.comparingLong(e -> e.getValue().getOrDefault(BmiCategory.OBESE, 0L)))
+      .max(Comparator.comparingLong(e -> e.getValue().get(BmiCategory.OBESE)))
       .map(Map.Entry::getKey).orElse(null);
 
     List<Object> stats = new ArrayList<>();
